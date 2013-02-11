@@ -1,8 +1,12 @@
 BIN=DIP
 
+
+#Application source code documentation
+doc:
+	doxygen Doxyfile
 #cleanup
 clean:
-	rm -rf *~ *.o $(BIN) ./Application/doc/ *.zip
+	rm -rf *~ *.o $(BIN) ./Application/doc/* *.zip
 
 #Git repository update
 push:
