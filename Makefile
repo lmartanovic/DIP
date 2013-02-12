@@ -4,9 +4,15 @@ BIN=DIP
 #Application source code documentation
 doc:
 	doxygen Doxyfile
+
+report:
+	cd ./Report; make pdf
 #cleanup
 clean:
 	rm -rf *~ *.o $(BIN) ./Application/doc/* *.zip
+
+clean-report:
+	cd ./Report; make clean
 
 #Git repository update
 push:
