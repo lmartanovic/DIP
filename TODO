@@ -1,5 +1,6 @@
 * Update README
 * utilities.h - utility functions
 * Shader class - represents shader program
+	- create() method - glCreateProgram to be moved from constrctor to prevent extension init conflicts
 	- setUniform - polymorphed - sets value of some most used types to uniform of given id - meybe a function instead of class method
 	- inherit specific shaders with local uniforms and initUniform implemented
