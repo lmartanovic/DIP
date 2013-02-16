@@ -1,4 +1,5 @@
-* Create README file
-* Update TODO
-* Create sample source, shader
-* Create Makefile
+* Update README
+* utilities.h - utility functions
+* Shader class - represents shader program
+	- setUniform - polymorphed - sets value of some most used types to uniform of given id - meybe a function instead of class method
+	- inherit specific shaders with local uniforms and initUniform implemented
