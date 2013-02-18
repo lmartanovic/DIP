@@ -5,12 +5,7 @@
 #include "utilities.h"
 
 //! Constructor
-Shader::Shader()
-{
-	// Create shader program object
-	if((id = glCreateProgram()) == 0)
-		checkOpenGLError();
-}
+Shader::Shader() {}
 
 //! Destructor
 Shader::~Shader()
@@ -28,6 +23,13 @@ Shader::~Shader()
 	}
 	// Delete the program itself
 	glDeleteProgram(id);
+}
+
+//! Creates a shader program object
+void Shader::create()
+{
+	if((id = glCreateProgram()) == 0)
+		checkOpenGLError();
 }
 
 //! Creates a shader object of given type from given source file
@@ -109,4 +111,30 @@ std::string Shader::getShaderInfoLog(GLuint shader)
 	std::string log(length, ' ');
 	glGetShaderInfoLog(shader, length, NULL, &log[0]);
 	return log;
+}
+
+//================= Uniform setters ==========================================
+void setUniform(GLint uni, glm::mat4 & value)
+{
+	glUniformMatrix4fv(uni, 1, GL_FALSE, glm::value_ptr(value));
+}
+
+void setUniform(GLint uni, glm::mat3 & value)
+{
+	glUniformMatrix3fv(uni, 1, GL_FALSE, glm::value_ptr(value));
+}
+
+void setUniform(GLint uni, glm::vec3 & value)
+{
+	glUniform3fv(uni, 1, glm::value_ptr(value));
+}
+
+void setUniform(GLint uni, GLint value)
+{
+	glUniform1i(uni, value);
+}
+
+void setUniform(GLint uni, GLfloat value)
+{
+	glUniform1f(uni, value);
 }
