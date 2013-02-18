@@ -8,7 +8,7 @@ public:
 	GLint depthMVPUni;
 	GLint depthNMUni;
 	GLint depthWorldUni;
-	GLint depthDiffMaterialerial;
+	GLint depthDiffMaterial;
 };
 
 void RSMShader::initUniforms()

@@ -1,4 +1,5 @@
 * Update README
 * utilities.h - utility functions
 * Shader class - represents shader program
-	- inherit specific shaders with local uniforms and initUniform implemented - ISM, halton, quad, point
+	- inherit specific shaders with local uniforms and initUniform implemented - halton, quad, point
+	- Makefile for actual compilation
