@@ -1,7 +1,9 @@
 # Real-Time Illumination of a Scene #
 Masters Thesis  
 Author: Bc. Lukáš Martanovič &lt;xmarta00@fit.vutbr.cz&gt;  
+
 ---
+
 ## Contents ##
 
 *	Shadow Mapping and Blinn-Phong shading for direct illumination.
