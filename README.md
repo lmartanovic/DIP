@@ -7,7 +7,7 @@ Author: Bc. Lukáš Martanovič &lt;xmarta00@fit.vutbr.cz&gt;
 ## Contents ##
 
 *	Shadow Mapping and Blinn-Phong shading for direct illumination.
-*	Imperfect Shadow Mapping
+*	Imperfect Shadow Mapping for Efficient Computation of Indirect Illumination
 	* Reflective Shadow map for Virtual Point Light generation
 	* Point cloud geometry
 	* Paraboloid projection
