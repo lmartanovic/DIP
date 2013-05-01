@@ -5,8 +5,7 @@ class ISMShader : public Shader
 public:
 	virtual void initUniforms();
 
-	GLint xoff;
-	GLint yoff;
+	GLint VPLSQRT;
 	GLint haltonTexUni;
 	GLint wscTexUni;
 	GLint normalTexUni;
@@ -15,8 +14,7 @@ public:
 
 void ISMShader::initUniforms()
 {
-	xoff = glGetUniformLocation(id, "xoffset");
-	yoff = glGetUniformLocation(id, "yoffset");
+	VPLSQRT = glGetUniformLocation(id, "VPLSQRT");
 	haltonTexUni = glGetUniformLocation(id, "halton");
 	wscTexUni = glGetUniformLocation(id, "wscTex");
 	normalTexUni = glGetUniformLocation(id, "normalTex");

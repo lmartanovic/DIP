@@ -16,5 +16,5 @@ void RSMShader::initUniforms()
 	depthMVPUni = glGetUniformLocation(id, "depthMVP");
 	depthNMUni = glGetUniformLocation(id, "normalMatrix");
 	depthWorldUni = glGetUniformLocation(id, "worldMatrix");
-	depthDiffMaterial = glGetUniformLocation(id, "diffuseMaterialComponent");	
+	depthDiffMaterial = glGetUniformLocation(id, "diffuseMaterialComponent");
 }
