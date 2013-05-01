@@ -1,5 +1,17 @@
+CC=g++
+LIBS=-lGLEW -lsfml-window -lsfml-system -lsfml-graphics -lm
 BIN=DIP
+SRC=./Application/src
 
+#Application
+all: Renderer.o
+	$(CC) -o $(BIN) $(SRC)/main.cpp Renderer.o Camera.o $(LIBS)
+
+Renderer.o: Camera.o
+	$(CC) -c $(SRC)/Renderer.cpp
+
+Camera.o:
+	$(CC) -c $(SRC)/Camera.cpp
 
 #Application source code documentation
 doc:
