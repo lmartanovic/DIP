@@ -8,5 +8,5 @@ uniform mat4 Proj;
 
 void main()
 {
-  gl_Position = Proj * View * World * vec4(position, 1.0);
+  gl_Position = vec4(position, 1.0);//Proj * View * World * vec4(position, 1.0);
 }

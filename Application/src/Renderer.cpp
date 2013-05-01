@@ -11,6 +11,8 @@ void Renderer::init()
 	initSFML();
 	initOpenGL();
 	initCamera();
+	initShaders();
+	initGeometry();
 	//more inits
 }
 
@@ -50,19 +52,42 @@ void Renderer::run()
 			}
 		}//pollEvent
 
-		//TODO: drawing
+		//TODO: kontrola ci treba kreslit
+		draw();
 		window.display();
 	}//main loop
 }
 
 //----------------------------------------------------------------------------
 //Inits
-//SFML initialisation
+//camera creation and setup
 void Renderer::initCamera()
 {
 	camera.create();	//create default camera
 }
 
+//import and convert geometry
+void Renderer::initGeometry()
+{
+	std::cout << "loading models..." << std::endl;
+	teapot.import("./Application/data/teapot.obj");
+	teapot.generateVAOs();
+}
+
+//GLEW and quad initialisation
+void Renderer::initOpenGL()
+{
+	glewExperimental = GL_TRUE;
+	glewInit();
+
+	//OGL inits
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+	//TODO: make quad
+}
+
+//SFML initialisation
 void Renderer::initSFML()
 {
 	sf::ContextSettings settings;
@@ -78,13 +103,28 @@ void Renderer::initSFML()
 				  settings);
 }
 
-//GLEW and quad initialisation
-void Renderer::initOpenGL()
+//Shader init
+void Renderer::initShaders()
 {
-	glewExperimental = GL_TRUE;
-	glewInit();
+	//sample
+	sampleShader.create();
+	sampleShader.addShader(VS, "Application/shaders/sample.vs");
+	sampleShader.addShader(FS, "Application/shaders/sample.fs");
+	glBindAttribLocation(sampleShader.getId(), POSITION, "position");
+	sampleShader.link();
+	sampleShader.initUniforms();
+}
 
-	//TODO: make quad
+//----------------------------------------------------------------------------
+//Rendering
+void Renderer::draw()
+{
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	sampleShader.use();
+	setUniform(sampleShader.world, teapot.getWorldMatrix());
+	setUniform(sampleShader.view, camera.getViewMatrix());
+	setUniform(sampleShader.proj, camera.getProjectionMatrix());
+	teapot.draw();
 }
 
 //----------------------------------------------------------------------------

@@ -1,17 +1,24 @@
 CC=g++
-LIBS=-lGLEW -lsfml-window -lsfml-system -lsfml-graphics -lm
+CFLAGS=-Wall -O2
+LIBS=-lassimp -lGLEW -lsfml-window -lsfml-system -lsfml-graphics -lm
 BIN=DIP
 SRC=./Application/src
 
 #Application
-all: Renderer.o
-	$(CC) -o $(BIN) $(SRC)/main.cpp Renderer.o Camera.o $(LIBS)
+all: Renderer.o Camera.o Geometry.o Shader.o
+	$(CC) $(CFLAGS) -o $(BIN) $(SRC)/main.cpp Renderer.o Camera.o Geometry.o Shader.o $(LIBS)
 
-Renderer.o: Camera.o
-	$(CC) -c $(SRC)/Renderer.cpp
+Renderer.o:
+	$(CC) $(CFLAGS) -c $(SRC)/Renderer.cpp
 
 Camera.o:
-	$(CC) -c $(SRC)/Camera.cpp
+	$(CC) $(CFLAGS) -c $(SRC)/Camera.cpp
+
+Geometry.o:
+	$(CC) $(CFLAGS) -c $(SRC)/Geometry.cpp
+
+Shader.o:
+	$(CC) $(CFLAGS) -c $(SRC)/Shader.cpp
 
 #Application source code documentation
 doc:

@@ -129,6 +129,11 @@ void setUniform(GLint uni, glm::vec3 & value)
 	glUniform3fv(uni, 1, glm::value_ptr(value));
 }
 
+void setUniform(GLint uni, glm::vec2 & value)
+{
+	glUniform2fv(uni, 1, glm::value_ptr(value));
+}
+
 void setUniform(GLint uni, GLint value)
 {
 	glUniform1i(uni, value);
