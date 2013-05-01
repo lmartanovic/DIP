@@ -1,9 +1,14 @@
+//standard library
 #include <iostream>
-
+//DIP
+#include "Renderer.h"
 //main
 int main(int argc, char* argv[])
 {
-  std::cout << "Hello World!" << std::endl;
+  Renderer renderer;
+
+  renderer.init();
+  renderer.run();
 
   return 0;
 }
