@@ -4,7 +4,8 @@
 Renderer::Renderer()
 : running(true),
   winHeight(600),
-  winWidth(800)
+  winWidth(800),
+  ry(0.0f)
 {}
 
 void Renderer::init()
@@ -71,7 +72,9 @@ void Renderer::initCamera()
 void Renderer::initGeometry()
 {
 	std::cout << "loading models..." << std::endl;
-	teapot.import("./Application/data/teapot.obj");
+	teapot.import("./Application/data/sibenik.obj");
+	teapot.scale(0.5);
+	teapot.moveBy(glm::vec3(0.0, -20.0, 0.0));
 	//teapot.generateVAOs(sampleAttribs, sampleShader);
 }
 
@@ -121,11 +124,17 @@ void Renderer::initShaders()
 //Rendering
 void Renderer::draw()
 {
+	ry = 0.05f;
+	teapot.rotate(ry, glm::vec3(0.0,1.0,0.0));
+	glm::mat3 NormalMatrix = glm::transpose(glm::inverse(glm::mat3(camera.getViewMatrix()*teapot.getWorldMatrix())));
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	sampleShader.use();
 	setUniform(sampleShader.view, camera.getViewMatrix());
 	setUniform(sampleShader.proj, camera.getProjectionMatrix());
 	setUniform(sampleShader.world, teapot.getWorldMatrix());
+	setUniform(sampleShader.cameraPos, camera.getOrigin());
+	setUniform(sampleShader.normalMat, NormalMatrix);
 	//teapot.draw(sampleShader);
 	teapot.draw();
 }

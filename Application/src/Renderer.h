@@ -42,6 +42,9 @@ private:
 	SampleShader sampleShader;
 	//TODO: vector of attrib structs to be passed to geometry on init
 	shaderAttribs sampleAttribs;
+
+	//animation
+	float ry;
 };
 
 #endif

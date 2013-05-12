@@ -49,6 +49,12 @@ public:
 
 	bool import(const std::string & filename);
 	void draw();
+	void scale(float factor) {worldMatrix = glm::scale(worldMatrix, glm::vec3(factor));}
+	void moveBy(glm::vec3 direction) {worldMatrix = glm::translate(worldMatrix,
+																	direction);}
+	void rotate(float angle, glm::vec3 axis) {worldMatrix = glm::rotate(worldMatrix,
+																		angle,
+																		axis);}
 
 	glm::mat4& getWorldMatrix() {return worldMatrix;}
 

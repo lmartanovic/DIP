@@ -11,11 +11,15 @@ public:
 		world = glGetUniformLocation(id, "World");
 		view = glGetUniformLocation(id, "View");
 		proj = glGetUniformLocation(id, "Proj");
+		cameraPos = glGetUniformLocation(id, "CameraPos");
+		normalMat = glGetUniformLocation(id, "NormalMat");
 	};
 
 	GLint world;
 	GLint view;
 	GLint proj;
+	GLint cameraPos;
+	GLint normalMat;
 };
 
 #endif
