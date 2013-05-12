@@ -10,7 +10,7 @@
 #include <SFML/Window.hpp>
 //DIP
 #include "Camera.h"
-#include "Geometry.h"
+#include "Model.h"
 #include "SampleShader.h"
 
 class Renderer
@@ -36,9 +36,12 @@ private:
 
 	Camera camera;
 	//TODO: nahradit za zoznam modelov
-	Geometry teapot;
+	//Geometry teapot;
+	Model teapot;
 	//TODO: nahradit zoznamov vsetkych shaderov
 	SampleShader sampleShader;
+	//TODO: vector of attrib structs to be passed to geometry on init
+	shaderAttribs sampleAttribs;
 };
 
 #endif

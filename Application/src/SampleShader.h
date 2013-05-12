@@ -2,10 +2,10 @@
 #define SAMPLE_SHADER_H
 
 #include "Shader.h"
-
 class SampleShader : public Shader
 {
 public:
+	
 	virtual void initUniforms()	
 	{
 		world = glGetUniformLocation(id, "World");

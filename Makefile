@@ -5,8 +5,8 @@ BIN=DIP
 SRC=./Application/src
 
 #Application
-all: Renderer.o Camera.o Geometry.o Shader.o
-	$(CC) $(CFLAGS) -o $(BIN) $(SRC)/main.cpp Renderer.o Camera.o Geometry.o Shader.o $(LIBS)
+all: clean Renderer.o Camera.o Model.o Shader.o
+	$(CC) $(CFLAGS) -o $(BIN) $(SRC)/main.cpp Renderer.o Camera.o Model.o Shader.o $(LIBS)
 
 Renderer.o:
 	$(CC) $(CFLAGS) -c $(SRC)/Renderer.cpp
@@ -20,6 +20,8 @@ Geometry.o:
 Shader.o:
 	$(CC) $(CFLAGS) -c $(SRC)/Shader.cpp
 
+Model.o:
+	$(CC) $(CFLAGS) -c $(SRC)/Model.cpp
 #Application source code documentation
 doc:
 	doxygen Doxyfile

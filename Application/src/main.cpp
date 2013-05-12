@@ -9,6 +9,6 @@ int main(int argc, char* argv[])
 
   renderer.init();
   renderer.run();
-
+  //cleanup - destroy VAOs, FBOs, ...
   return 0;
 }

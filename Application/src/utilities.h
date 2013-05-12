@@ -1,4 +1,6 @@
 /*! \file utilities.h */
+#ifndef UTILITIES_H
+#define UTILITIES_H
 //STL
 #include <fstream>
 #include <iterator>
@@ -64,3 +66,5 @@ void checkOpenGLError()
 	    }//switch
     }//while loop
 }
+
+#endif

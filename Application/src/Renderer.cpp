@@ -1,3 +1,4 @@
+#include <iostream>
 #include "Renderer.h"
 
 Renderer::Renderer()
@@ -71,7 +72,7 @@ void Renderer::initGeometry()
 {
 	std::cout << "loading models..." << std::endl;
 	teapot.import("./Application/data/teapot.obj");
-	teapot.generateVAOs();
+	//teapot.generateVAOs(sampleAttribs, sampleShader);
 }
 
 //GLEW and quad initialisation
@@ -110,9 +111,10 @@ void Renderer::initShaders()
 	sampleShader.create();
 	sampleShader.addShader(VS, "Application/shaders/sample.vs");
 	sampleShader.addShader(FS, "Application/shaders/sample.fs");
-	glBindAttribLocation(sampleShader.getId(), POSITION, "position");
 	sampleShader.link();
 	sampleShader.initUniforms();
+	sampleAttribs.posAttrib = glGetAttribLocation(sampleShader.getId(), "position");
+	sampleAttribs.normAttrib = glGetAttribLocation(sampleShader.getId(), "normal");
 }
 
 //----------------------------------------------------------------------------
@@ -121,9 +123,10 @@ void Renderer::draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	sampleShader.use();
-	setUniform(sampleShader.world, teapot.getWorldMatrix());
 	setUniform(sampleShader.view, camera.getViewMatrix());
 	setUniform(sampleShader.proj, camera.getProjectionMatrix());
+	setUniform(sampleShader.world, teapot.getWorldMatrix());
+	//teapot.draw(sampleShader);
 	teapot.draw();
 }
 
@@ -132,10 +135,36 @@ void Renderer::draw()
 //Keyboard
 void Renderer::handleKeyPressed(sf::Event & event)
 {
+	glm::vec3& o = camera.getOrigin();
+	
 	switch(event.key.code)
 	{
 	case sf::Keyboard::Escape:
 		running = false;
+		break;
+	case sf::Keyboard::Down:
+		o.z += 1.0f;
+		camera.move();
+		break;
+	case sf::Keyboard::Up:
+		o.z -= 1.0f;
+		camera.move();
+		break;
+	case sf::Keyboard::Left:
+		o.x -= 1.0f;
+		camera.move();
+		break;
+	case sf::Keyboard::Right:
+		o.x += 1.0f;
+		camera.move();
+		break;
+	case sf::Keyboard::Add:
+		o.y += 1.0f;
+		camera.move();
+		break;
+	case sf::Keyboard::Subtract:
+		o.y -= 1.0f;
+		camera.move();
 		break;
 	default:
 		break;

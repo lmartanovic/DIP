@@ -1,7 +1,7 @@
 #include "Camera.h"
-
+#include <iostream>
 Camera::Camera()
-: origin(glm::vec3(0.0, -5.0, 0.0)),
+: origin(glm::vec3(0.0, 0.0, 100.0)),
   target(glm::vec3(0.0, 0.0, 0.0)),
   fov(60.0),
   winWidth(800.0),
@@ -11,7 +11,7 @@ Camera::Camera()
 {}
 
 Camera::Camera(float FoV, float wWidth, float wHeight, float nPlane, float fPlane)
-: origin(glm::vec3(0.0, -5.0, 0.0)),
+: origin(glm::vec3(0.0, 0.0, 100.0)),
   target(glm::vec3(0.0, 0.0, 0.0)),
   fov(FoV),
   winWidth(wWidth),

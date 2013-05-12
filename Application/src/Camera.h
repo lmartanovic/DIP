@@ -14,6 +14,7 @@ public:
 	void recomputeProjection(float wWidth, float wHeight);
 	void setOrigin(glm::vec3 & o);
 	void setTarget(glm::vec3 & t);
+	void move() {computeViewMatrix();};
 
 	glm::mat4 & getProjectionMatrix();
 	glm::mat4 & getViewMatrix();
