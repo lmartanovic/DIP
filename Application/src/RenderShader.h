@@ -1,8 +1,8 @@
-#ifndef SAMPLE_SHADER_H
-#define SAMPLE_SHADER_H
+#ifndef RENDER_SHADER_H
+#define RENDER_SHADER_H
 
 #include "Shader.h"
-class SampleShader : public Shader
+class RenderShader : public Shader
 {
 public:
 	
@@ -11,7 +11,6 @@ public:
 		world = glGetUniformLocation(id, "World");
 		view = glGetUniformLocation(id, "View");
 		proj = glGetUniformLocation(id, "Proj");
-		cameraPos = glGetUniformLocation(id, "CameraPos");
 		normalMat = glGetUniformLocation(id, "NormalMat");
 	};
 

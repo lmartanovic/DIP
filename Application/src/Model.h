@@ -59,6 +59,7 @@ private:
 				  std::vector<unsigned int> & indices);
 	void setCenter(std::vector<Vector3f>& positions);
 
+	//geometry
 	GLuint mainVAO;
 	GLuint buffers[NUM_BUFFERS];
 	std::vector<MeshInfo> meshInfos;

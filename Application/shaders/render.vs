@@ -7,17 +7,13 @@ uniform mat4 World;
 uniform mat4 View;
 uniform mat4 Proj;
 uniform mat3 NormalMat;
-uniform vec3 CameraPos;
 
 out vec3 Normal;
-out vec3 Position;
-out vec3 EyeDir;
+out vec4 Position;
 
 void main()
 {
-  vec4 eyePos = View * World * vec4(position, 1.0);
-  EyeDir = CameraPos - eyePos.xyz;
   gl_Position = Proj * View * World * vec4(position, 1.0);
-  Position = (World * vec4(position,1.0)).xyz;
+  Position = (World * vec4(position,1.0));
   Normal = NormalMat * normal;
 }

@@ -12,7 +12,7 @@
 #include "Camera.h"
 #include "Model.h"
 #include "QuadShader.h"
-#include "SampleShader.h"
+#include "RenderShader.h"
 
 #define WIN_HEIGHT 600
 #define WIN_WIDTH 800
@@ -50,11 +50,11 @@ private:
 	Model model;
 	//TODO: nahradit zoznamov vsetkych shaderov
 	QuadShader quadShader;
-	SampleShader sampleShader;
+	RenderShader renderShader;
 	//FBO array
 	GLuint FBOs[NUM_FBOS];
 	//render textures
-	GLuint renderDepthTex, renderColorTex;
+	GLuint renderDepthTex, renderWSCTex, renderNormalTex, renderColorTex;
 	//fullscreen quad rendering
 	GLuint quadVAO;
 	GLuint quadBuffers[2];

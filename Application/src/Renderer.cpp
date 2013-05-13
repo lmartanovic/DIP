@@ -87,6 +87,26 @@ void Renderer::initFramebuffers()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24,
 				 WIN_WIDTH, WIN_HEIGHT, 0,
 				 GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	//create world-space coord texture
+	glGenTextures(1, &renderWSCTex);
+	glBindTexture(GL_TEXTURE_2D, renderWSCTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
+	             WIN_WIDTH, WIN_HEIGHT, 0,
+	             GL_RGBA, GL_FLOAT, 0);
+	//create normal texture
+	glGenTextures(1, &renderNormalTex);
+	glBindTexture(GL_TEXTURE_2D, renderNormalTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
+	             WIN_WIDTH, WIN_HEIGHT, 0,
+	             GL_RGB, GL_FLOAT, 0);
 	//create color texture
 	glGenTextures(1, &renderColorTex);
 	glBindTexture(GL_TEXTURE_2D, renderColorTex);
@@ -101,10 +121,16 @@ void Renderer::initFramebuffers()
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
 	                       renderDepthTex, 0);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           renderWSCTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+                           renderNormalTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
                            renderColorTex, 0);
 	//set draw buffers
 	GLenum renderMRT[] = {
-		GL_COLOR_ATTACHMENT0, //color location0
+		GL_COLOR_ATTACHMENT0,//wsc location0
+		GL_COLOR_ATTACHMENT1,//normals location1
+		GL_COLOR_ATTACHMENT2 //color location2
 	};
 	glDrawBuffers(3, renderMRT);
 	//check
@@ -184,11 +210,11 @@ void Renderer::initSFML()
 void Renderer::initShaders()
 {
 	//sample
-	sampleShader.create();
-	sampleShader.addShader(VS, "Application/shaders/sample.vs");
-	sampleShader.addShader(FS, "Application/shaders/sample.fs");
-	sampleShader.link();
-	sampleShader.initUniforms();
+	renderShader.create();
+	renderShader.addShader(VS, "Application/shaders/render.vs");
+	renderShader.addShader(FS, "Application/shaders/render.fs");
+	renderShader.link();
+	renderShader.initUniforms();
 	//simple quad rendering with single texture
 	quadShader.create();
 	quadShader.addShader(VS, "Application/shaders/quad.vs");
@@ -205,18 +231,31 @@ void Renderer::draw()
 	model.rotate(ry, glm::vec3(0.0,1.0,0.0));
 	glm::mat3 NormalMatrix = glm::transpose(glm::inverse(glm::mat3(camera.getViewMatrix()*model.getWorldMatrix())));
 
-	//bind offscreen buffer
+	//if change
+		//RSM
+		//ISM
+		//pull-push
+	//-------------------------------------------------------------------------------
+	//Render into G-buffer - Camera POV
+	//-------------------------------------------------------------------------------
 	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RENDER_FBO]);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	sampleShader.use();
-	setUniform(sampleShader.view, camera.getViewMatrix());
-	setUniform(sampleShader.proj, camera.getProjectionMatrix());
-	setUniform(sampleShader.world, model.getWorldMatrix());
-	setUniform(sampleShader.cameraPos, camera.getOrigin());
-	setUniform(sampleShader.normalMat, NormalMatrix);
-	model.draw(); //result is in renderColorTex;
-
+	renderShader.use();
+	setUniform(renderShader.view, camera.getViewMatrix());
+	setUniform(renderShader.proj, camera.getProjectionMatrix());
+	setUniform(renderShader.world, model.getWorldMatrix());
+	setUniform(renderShader.normalMat, NormalMatrix);
+	model.draw();
+	//discontinuity
+	//split
+	//deferred shading
+	//gather
+	//blurX
+	//blurY
+	//-------------------------------------------------------------------------------
+	// Show Result
+	//-------------------------------------------------------------------------------
 	//bind main FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
