@@ -11,21 +11,31 @@
 //DIP
 #include "Camera.h"
 #include "Model.h"
+#include "QuadShader.h"
 #include "SampleShader.h"
+
+#define WIN_HEIGHT 600
+#define WIN_WIDTH 800
+
+#define NUM_FBOS 1
+#define RENDER_FBO 0
 
 class Renderer
 {
 public:
 	Renderer();
-	void init();
+	void init(char* modelFile);
 	void run();
 private:
 	void draw();
+	void drawFullscreenQuad();
 	void handleKeyPressed(sf::Event & event);
 	void handleMouseWheel(sf::Event & event);
 	void initCamera();
-	void initGeometry();
+	void initFramebuffers();
+	void initGeometry(char* modelFile);
 	void initOpenGL();
+	void initQuad();
 	void initSFML();
 	void initShaders();
 
@@ -37,14 +47,18 @@ private:
 	Camera camera;
 	//TODO: nahradit za zoznam modelov
 	//Geometry teapot;
-	Model teapot;
+	Model model;
 	//TODO: nahradit zoznamov vsetkych shaderov
+	QuadShader quadShader;
 	SampleShader sampleShader;
-	//TODO: vector of attrib structs to be passed to geometry on init
-	shaderAttribs sampleAttribs;
-
+	//FBO array
+	GLuint FBOs[NUM_FBOS];
+	//render textures
+	GLuint renderDepthTex, renderColorTex;
+	//fullscreen quad rendering
+	GLuint quadVAO;
+	GLuint quadBuffers[2];
 	//animation
 	float ry;
 };
-
 #endif

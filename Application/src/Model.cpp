@@ -2,7 +2,8 @@
 
 Model::Model()
 : mainVAO(0),
-  worldMatrix(glm::mat4(1.0f))
+  worldMatrix(glm::mat4(1.0f)),
+  center(glm::vec3(0.0))
 {}
 
 Model::~Model()
@@ -75,6 +76,8 @@ bool Model::fromScene(const aiScene* scene, const std::string & filename)
 		initMesh(mesh, positions, normals, indices);
 	}
 
+	//set object center based on geometry
+	setCenter(positions);
 	//generate VBO and EBO
 	//positions
 	glBindBuffer(GL_ARRAY_BUFFER, buffers[VBO_POS]);
@@ -124,6 +127,43 @@ void Model::initMesh(const aiMesh* mesh, std::vector<Vector3f> & positions,
 		indices.push_back(face.mIndices[1]);
 		indices.push_back(face.mIndices[2]);
 	}
+}
+
+glm::vec3& Model::getCenter()
+{
+	glm::vec3 c;
+	glm::vec4 cc = glm::vec4(center, 1.0);
+	cc = worldMatrix*cc;
+	center.x = cc.x;
+	center.y = cc.y;
+	center.z = cc.z;
+	return center;
+}
+
+void Model::setCenter(std::vector<Vector3f>& positions)
+{
+	float minX = 1e30f;
+	float minY = 1e30f;
+	float minZ = 1e30f;
+	float maxX = -1e30f;
+	float maxY = -1e30f;
+	float maxZ = -1e30f;
+	float x, y, z;
+	for(unsigned int i = 0; i < positions.size(); i++)
+	{
+		x = positions[i].x;
+		minX = minX > x ? x : minX;
+		maxX = maxX > x ? maxX : x;
+		y = positions[i].y;
+		minY = minY > y ? y : minY;
+		maxY = maxY > y ? maxY : y;
+		z = positions[i].z;
+		minZ = minZ > z ? z : minZ;
+		maxZ = maxZ > z ? maxZ : z;
+	}
+	center.x = minX + (maxX - minX)/2;
+	center.y = minY + (maxY - minY)/2;
+	center.z = minZ + (maxZ - minZ)/2;
 }
 
 //draw the whole model

@@ -34,13 +34,6 @@ struct MeshInfo
 	unsigned int baseVertex;
 };
 
-typedef struct
-{
-	GLint posAttrib;
-	GLint normAttrib;
-	GLint texCoordAttrib;
-} shaderAttribs;
-
 class Model
 {
 public:
@@ -57,17 +50,20 @@ public:
 																		axis);}
 
 	glm::mat4& getWorldMatrix() {return worldMatrix;}
+	glm::vec3& getCenter();
 
 private:
 	bool fromScene(const aiScene* scene, const std::string & filename);
 	void initMesh(const aiMesh* mesh, std::vector<Vector3f> & positions,
 				  std::vector<Vector3f> & normals,
 				  std::vector<unsigned int> & indices);
+	void setCenter(std::vector<Vector3f>& positions);
 
 	GLuint mainVAO;
 	GLuint buffers[NUM_BUFFERS];
 	std::vector<MeshInfo> meshInfos;
 	glm::mat4 worldMatrix;
+	glm::vec3 center;
 };
 
 #endif

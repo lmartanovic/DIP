@@ -20,5 +20,5 @@ void main()
 	vec4 diffuse = vec4(1.0, 0.0, 0.0, 1.0)*angle;
 	vec4 specular = pow(angle2, shininess) * vec4(1.0);
 	vec4 ambient = vec4(0.05, 0.0, 0.0, 1.0);
-	fragColor = diffuse + specular + ambient;
+	fragColor = diffuse + specular;// + ambient;
 }

@@ -3,12 +3,9 @@
 class QuadShader : public Shader
 {
 public:
-	virtual void initUniforms();
+	virtual void initUniforms() {
+		tex = glGetUniformLocation(id, "tex");
+	};
 
-	GLint shadowMapUni;
+	GLint tex;
 };
-
-void QuadShader::initUniforms()
-{
-	shadowMapUni = glGetUniformLocation(id, "shadowMap");
-}

@@ -7,7 +7,7 @@ int main(int argc, char* argv[])
 {
   Renderer renderer;
 
-  renderer.init();
+  renderer.init(argv[1]);
   renderer.run();
   //cleanup - destroy VAOs, FBOs, ...
   return 0;
