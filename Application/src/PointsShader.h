@@ -3,16 +3,14 @@
 class PointsShader : public Shader
 {
 public:
-	virtual void initUniforms();
+	virtual void initUniforms()
+	{
+		worldMat = glGetUniformLocation(id, "WorldMat");
+		viewMat = glGetUniformLocation(id, "ViewMat");
+		projMat = glGetUniformLocation(id, "ProjMat");
+	}
 
 	GLint worldMat;
 	GLint viewMat;
 	GLint projMat;
 };
-
-void PointsShader::initUniforms()
-{
-	worldMat = glGetUniformLocation(id, "WorldMat");
-	viewMat = glGetUniformLocation(id, "ViewMat");
-	projMat = glGetUniformLocation(id, "ProjMat");
-}

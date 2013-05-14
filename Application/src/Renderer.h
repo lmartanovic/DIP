@@ -12,6 +12,7 @@
 #include "Camera.h"
 #include "Model.h"
 #include "QuadShader.h"
+#include "PointsShader.h"
 #include "RenderShader.h"
 
 #define WIN_HEIGHT 600
@@ -50,6 +51,7 @@ private:
 	Model model;
 	//TODO: nahradit zoznamov vsetkych shaderov
 	QuadShader quadShader;
+	PointsShader pointsShader;
 	RenderShader renderShader;
 	//FBO array
 	GLuint FBOs[NUM_FBOS];

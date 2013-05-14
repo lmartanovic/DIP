@@ -1,6 +1,3 @@
-* generate point cloud (by baricentric)
-	- model has pointCloud struct - vao + point vector(size - numpoints, Point structs - triangle index, coords, barycentric coords)
-* be able to show point cloud
 * movable light
 * deferred phong
 * RSM creation

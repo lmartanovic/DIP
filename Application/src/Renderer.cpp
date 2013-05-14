@@ -75,7 +75,9 @@ void Renderer::initCamera()
 void Renderer::initFramebuffers()
 {
 	glGenFramebuffers(NUM_FBOS, FBOs);
-	//offscreen rendering
+	//-------------------------------------------------------------------------
+	// CAMERA POV RENDER
+	//-------------------------------------------------------------------------
 	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RENDER_FBO]);
 	//textures
 	glGenTextures(1, &renderDepthTex);
@@ -221,6 +223,12 @@ void Renderer::initShaders()
 	quadShader.addShader(FS, "Application/shaders/quad.fs");
 	quadShader.link();
 	quadShader.initUniforms();
+	//point rendering
+	pointsShader.create();
+	pointsShader.addShader(VS, "Application/shaders/points.vs");
+	pointsShader.addShader(FS, "Application/shaders/points.fs");
+	pointsShader.link();
+	pointsShader.initUniforms();
 }
 
 //----------------------------------------------------------------------------
@@ -238,7 +246,7 @@ void Renderer::draw()
 	//-------------------------------------------------------------------------------
 	//Render into G-buffer - Camera POV
 	//-------------------------------------------------------------------------------
-	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RENDER_FBO]);
+	/*glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RENDER_FBO]);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	renderShader.use();
@@ -246,7 +254,7 @@ void Renderer::draw()
 	setUniform(renderShader.proj, camera.getProjectionMatrix());
 	setUniform(renderShader.world, model.getWorldMatrix());
 	setUniform(renderShader.normalMat, NormalMatrix);
-	model.draw();
+	model.draw();*/
 	//discontinuity
 	//split
 	//deferred shading
@@ -259,12 +267,17 @@ void Renderer::draw()
 	//bind main FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	quadShader.use();
+	pointsShader.use();
+	setUniform(pointsShader.viewMat, camera.getViewMatrix());
+	setUniform(pointsShader.projMat, camera.getProjectionMatrix());
+	setUniform(pointsShader.worldMat, model.getWorldMatrix());
+	model.drawPointCloud();
+	/*quadShader.use();
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, renderColorTex);
 	setUniform(quadShader.tex, 0);
 	//render quad
-	drawFullscreenQuad();
+	drawFullscreenQuad();*/
 }
 
 void Renderer::drawFullscreenQuad()
