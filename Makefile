@@ -5,14 +5,17 @@ BIN=DIP
 SRC=./Application/src
 
 #Application
-all: clean Renderer.o Camera.o Model.o Shader.o
-	$(CC) $(CFLAGS) -o $(BIN) $(SRC)/main.cpp Renderer.o Camera.o Model.o Shader.o $(LIBS)
+all: clean Renderer.o Camera.o Light.o Model.o Shader.o
+	$(CC) $(CFLAGS) -o $(BIN) $(SRC)/main.cpp Renderer.o Camera.o Light.o Model.o Shader.o $(LIBS)
 
 Renderer.o:
 	$(CC) $(CFLAGS) -c $(SRC)/Renderer.cpp
 
 Camera.o:
 	$(CC) $(CFLAGS) -c $(SRC)/Camera.cpp
+
+Light.o:
+	$(CC) $(CFLAGS) -c $(SRC)/Light.cpp
 
 Geometry.o:
 	$(CC) $(CFLAGS) -c $(SRC)/Geometry.cpp

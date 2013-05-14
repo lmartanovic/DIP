@@ -14,6 +14,7 @@ void Renderer::init(char* modelFile)
 	initSFML();
 	initOpenGL();
 	initCamera();
+	initLight();
 	initShaders();
 	initGeometry(modelFile);
 	initQuad();
@@ -41,7 +42,7 @@ void Renderer::run()
 				winWidth = event.size.width;
 				winHeight = event.size.height;
 				glViewport(0,0,winWidth, winHeight);
-				//TODO: Camera - rebuild projection matrix
+				camera.recomputeProjection(winWidth, winHeight);
 				break;
 				//keyboard
 			case sf::Event::KeyPressed:
@@ -69,6 +70,11 @@ void Renderer::run()
 void Renderer::initCamera()
 {
 	camera.create();	//create default camera
+}
+//primary light source creation
+void Renderer::initLight()
+{
+	light.create();		//create default light
 }
 
 //init framebuffer objects
@@ -138,7 +144,95 @@ void Renderer::initFramebuffers()
 	//check
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     	std::cerr << "Cosi sa posralo render" << std::endl;
-
+    //-------------------------------------------------------------------------
+	// LIGHT POV RENDER
+	//-------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RSM_FBO]);
+	//textures
+	glGenTextures(1, &rsmDepthTex);
+	glBindTexture(GL_TEXTURE_2D, rsmDepthTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24,
+				 WIN_WIDTH, WIN_HEIGHT, 0,
+				 GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	//create world-space coord texture
+	glGenTextures(1, &rsmWSCTex);
+	glBindTexture(GL_TEXTURE_2D, rsmWSCTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
+	             WIN_WIDTH, WIN_HEIGHT, 0,
+	             GL_RGBA, GL_FLOAT, 0);
+	//create normal texture
+	glGenTextures(1, &rsmNormalTex);
+	glBindTexture(GL_TEXTURE_2D, rsmNormalTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
+	             WIN_WIDTH, WIN_HEIGHT, 0,
+	             GL_RGB, GL_FLOAT, 0);
+	//create color texture
+	glGenTextures(1, &rsmColorTex);
+	glBindTexture(GL_TEXTURE_2D, rsmColorTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
+				 WIN_WIDTH, WIN_HEIGHT, 0,
+				 GL_RGBA, GL_FLOAT, 0);
+	//attach textures to FBO
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+	                       rsmDepthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           rsmWSCTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+                           rsmNormalTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
+                           rsmColorTex, 0);
+	//set draw buffers
+	GLenum rsmMRT[] = {
+		GL_COLOR_ATTACHMENT0,//wsc location0
+		GL_COLOR_ATTACHMENT1,//normals location1
+		GL_COLOR_ATTACHMENT2 //color location2
+	};
+	glDrawBuffers(3, rsmMRT);
+	//check
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    	std::cerr << "Cosi sa posralo rsm" << std::endl;
+    //-------------------------------------------------------------------------
+	// DEFERRED SHADING
+	//-------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[DEFERRED_FBO]);
+	//generate the output color texture
+	glGenTextures(1, &deferredColTex);
+	glBindTexture(GL_TEXTURE_2D, deferredColTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
+	             WIN_WIDTH, WIN_HEIGHT, 0,
+	             GL_RGBA, GL_FLOAT, 0);
+	//attach textures to FBO
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+	                       renderDepthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           deferredColTex, 0);
+	//set draw buffer
+	GLenum deferredRT[] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, deferredRT);
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    	std::cerr << "Cosi sa posralo deferred" << std::endl;
     //unbind
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -148,8 +242,8 @@ void Renderer::initGeometry(char* modelFile)
 {
 	std::cout << "loading models..." << std::endl;
 	model.import(modelFile);
-	model.scale(0.5);
-	//possible to move model to 0 0 0 by moveBy(-model.center);
+	//model.scale();
+	//model.moveBy(model.getCenter());
 	camera.setTarget(model.getCenter());
 }
 
@@ -229,6 +323,12 @@ void Renderer::initShaders()
 	pointsShader.addShader(FS, "Application/shaders/points.fs");
 	pointsShader.link();
 	pointsShader.initUniforms();
+	//deferred shader
+	deferredShader.create();
+	deferredShader.addShader(VS, "Application/shaders/quad.vs");
+	deferredShader.addShader(FS, "Application/shaders/deferred.fs");
+	deferredShader.link();
+	deferredShader.initUniforms();
 }
 
 //----------------------------------------------------------------------------
@@ -237,27 +337,57 @@ void Renderer::draw()
 {
 	ry = 0.05f;
 	model.rotate(ry, glm::vec3(0.0,1.0,0.0));
-	glm::mat3 NormalMatrix = glm::transpose(glm::inverse(glm::mat3(camera.getViewMatrix()*model.getWorldMatrix())));
+	//compute normal matrix for light
+	glm::mat3 NormalMatrix = glm::transpose(glm::inverse(glm::mat3(light.getViewMatrix()*model.getWorldMatrix())));
 
 	//if change
 		//RSM
+		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RSM_FBO]);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		renderShader.use();
+		setUniform(renderShader.view, light.getViewMatrix());
+		setUniform(renderShader.proj, light.getProjectionMatrix());
+		setUniform(renderShader.world, model.getWorldMatrix());
+		setUniform(renderShader.normalMat, NormalMatrix);
+		model.draw();
 		//ISM
 		//pull-push
 	//-------------------------------------------------------------------------------
 	//Render into G-buffer - Camera POV
 	//-------------------------------------------------------------------------------
-	/*glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RENDER_FBO]);
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RENDER_FBO]);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+	NormalMatrix = glm::transpose(glm::inverse(glm::mat3(camera.getViewMatrix()*model.getWorldMatrix())));
 	renderShader.use();
 	setUniform(renderShader.view, camera.getViewMatrix());
 	setUniform(renderShader.proj, camera.getProjectionMatrix());
 	setUniform(renderShader.world, model.getWorldMatrix());
 	setUniform(renderShader.normalMat, NormalMatrix);
-	model.draw();*/
+	model.draw();
 	//discontinuity
 	//split
 	//deferred shading
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[DEFERRED_FBO]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glm::mat4 DVP = Light::biasMatrix * light.getProjectionMatrix() * light.getViewMatrix();
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, renderWSCTex);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, renderNormalTex);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, renderColorTex);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, rsmDepthTex);
+	deferredShader.use();
+	setUniform(deferredShader.wscTex, 0);
+	setUniform(deferredShader.normalTex, 1);
+	setUniform(deferredShader.colorTex, 2);
+	setUniform(deferredShader.shadowTex, 3);
+	setUniform(deferredShader.view, camera.getViewMatrix());
+	setUniform(deferredShader.biasDVP, DVP);
+	setUniform(deferredShader.cameraPos, camera.getOrigin());
+	setUniform(deferredShader.lightPos, light.getOrigin());
+	drawFullscreenQuad();
 	//gather
 	//blurX
 	//blurY
@@ -267,17 +397,17 @@ void Renderer::draw()
 	//bind main FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	pointsShader.use();
+	/*pointsShader.use();
 	setUniform(pointsShader.viewMat, camera.getViewMatrix());
 	setUniform(pointsShader.projMat, camera.getProjectionMatrix());
 	setUniform(pointsShader.worldMat, model.getWorldMatrix());
-	model.drawPointCloud();
-	/*quadShader.use();
+	model.drawPointCloud();*/
+	quadShader.use();
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, renderColorTex);
+	glBindTexture(GL_TEXTURE_2D, deferredColTex);
 	setUniform(quadShader.tex, 0);
 	//render quad
-	drawFullscreenQuad();*/
+	drawFullscreenQuad();
 }
 
 void Renderer::drawFullscreenQuad()
@@ -293,7 +423,7 @@ void Renderer::drawFullscreenQuad()
 //Keyboard
 void Renderer::handleKeyPressed(sf::Event & event)
 {
-	glm::vec3& o = camera.getOrigin();
+	glm::vec3& o = light.getOrigin();
 	
 	switch(event.key.code)
 	{
@@ -302,27 +432,27 @@ void Renderer::handleKeyPressed(sf::Event & event)
 		break;
 	case sf::Keyboard::Down:
 		o.z += 1.0f;
-		camera.move();
+		light.move();
 		break;
 	case sf::Keyboard::Up:
 		o.z -= 1.0f;
-		camera.move();
+		light.move();
 		break;
 	case sf::Keyboard::Left:
 		o.x -= 1.0f;
-		camera.move();
+		light.move();
 		break;
 	case sf::Keyboard::Right:
 		o.x += 1.0f;
-		camera.move();
+		light.move();
 		break;
 	case sf::Keyboard::Add:
 		o.y += 1.0f;
-		camera.move();
+		light.move();
 		break;
 	case sf::Keyboard::Subtract:
 		o.y -= 1.0f;
-		camera.move();
+		light.move();
 		break;
 	default:
 		break;

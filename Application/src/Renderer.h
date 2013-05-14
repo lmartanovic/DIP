@@ -10,7 +10,9 @@
 #include <SFML/Window.hpp>
 //DIP
 #include "Camera.h"
+#include "Light.h"
 #include "Model.h"
+#include "DeferredShader.h"
 #include "QuadShader.h"
 #include "PointsShader.h"
 #include "RenderShader.h"
@@ -18,8 +20,10 @@
 #define WIN_HEIGHT 600
 #define WIN_WIDTH 800
 
-#define NUM_FBOS 1
+#define NUM_FBOS 3
 #define RENDER_FBO 0
+#define DEFERRED_FBO 1
+#define RSM_FBO 2
 
 class Renderer
 {
@@ -35,6 +39,7 @@ private:
 	void initCamera();
 	void initFramebuffers();
 	void initGeometry(char* modelFile);
+	void initLight();
 	void initOpenGL();
 	void initQuad();
 	void initSFML();
@@ -46,10 +51,10 @@ private:
 	sf::RenderWindow window;
 
 	Camera camera;
-	//TODO: nahradit za zoznam modelov
-	//Geometry teapot;
+	Light light;
 	Model model;
 	//TODO: nahradit zoznamov vsetkych shaderov
+	DeferredShader deferredShader;
 	QuadShader quadShader;
 	PointsShader pointsShader;
 	RenderShader renderShader;
@@ -57,6 +62,8 @@ private:
 	GLuint FBOs[NUM_FBOS];
 	//render textures
 	GLuint renderDepthTex, renderWSCTex, renderNormalTex, renderColorTex;
+	GLuint deferredColTex;
+	GLuint rsmDepthTex, rsmWSCTex, rsmNormalTex, rsmColorTex;
 	//fullscreen quad rendering
 	GLuint quadVAO;
 	GLuint quadBuffers[2];
