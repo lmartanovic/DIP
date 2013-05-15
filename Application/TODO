@@ -1,8 +1,12 @@
-* halton - initHalton()
-* buffer split and gather with direct illumination
 * discontinuity
 * blur attributes
 * blur
+* sibenik
+	- cancel the model rotation
+	- test on sibenik
+	- place kamera inside
+	- place light inside
+	- test shadow mapping
 * ISM creation
 * pull and push
 * indirect deferred illumination

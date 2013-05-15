@@ -3,12 +3,10 @@
 class HaltonShader : public Shader
 {
 public:
-	virtual void initUniforms();
+	virtual void initUniforms()
+	{
+		vplSqrt = glGetUniformLocation(id, "vplSqrt");
+	}
 
-	GLint haltonUni;
+	GLint vplSqrt;
 };
-
-void HaltonShader::initUniforms()
-{
-	haltonUni = glGetUniformLocation(id, "NUM_VPLS_SQUARE");
-}

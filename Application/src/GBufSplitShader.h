@@ -3,7 +3,15 @@
 class GBufSplitShader : public Shader
 {
 public:
-  virtual void initUniforms();
+  virtual void initUniforms()
+  {
+    origColTex = glGetUniformLocation(id, "origColTex");
+    origNormTex = glGetUniformLocation(id, "origNormTex");
+    origWSCTex = glGetUniformLocation(id, "origWSCTex");
+    blocksX = glGetUniformLocation(id, "blocksX");
+    blocksY = glGetUniformLocation(id, "blocksY");
+    window = glGetUniformLocation(id, "window");
+  }
 
   GLint origColTex;
   GLint origNormTex;
@@ -12,13 +20,3 @@ public:
   GLint blocksY;
   GLint window;
 };
-
-void GBufSplitShader::initUniforms()
-{
-  origColTex = glGetUniformLocation(id, "origColTex");
-  origNormTex = glGetUniformLocation(id, "origNormTex");
-  origWSCTex = glGetUniformLocation(id, "origWSCTex");
-  blocksX = glGetUniformLocation(id, "blocksX");
-  blocksY = glGetUniformLocation(id, "blocksY");
-  window = glGetUniformLocation(id, "window");
-}

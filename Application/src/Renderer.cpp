@@ -19,6 +19,7 @@ void Renderer::init(char* modelFile)
 	initGeometry(modelFile);
 	initQuad();
 	initFramebuffers();
+	initHalton();
 	//more inits
 }
 
@@ -82,6 +83,34 @@ void Renderer::initFramebuffers()
 {
 	glGenFramebuffers(NUM_FBOS, FBOs);
 	//-------------------------------------------------------------------------
+	// HALTON TEXTURE CREATION
+	//-------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[HALTON_FBO]);
+	//textures
+	glGenTextures(1, &haltonDepthTex);
+	glBindTexture(GL_TEXTURE_2D, haltonDepthTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, VPL_SQRT, VPL_SQRT, 0,
+	             GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	//color coded halton coordinates
+	glGenTextures(1, &haltonTex);
+  	glBindTexture(GL_TEXTURE_2D, haltonTex);
+  	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+ 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG, VPL_SQRT, VPL_SQRT, 0, GL_RG, GL_FLOAT, NULL);
+	//attach to FBO
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 
+						   GL_TEXTURE_2D, haltonDepthTex, 0);
+  	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 
+  		 			 	   GL_TEXTURE_2D, haltonTex, 0);
+  	//specify draw buffers
+  	GLenum HMRT[] = {GL_COLOR_ATTACHMENT0};
+  	glDrawBuffers(1, HMRT);
+  	//check completeness
+  	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    	std::cout << "Cosi sa posralo halton" << std::endl;
+	//-------------------------------------------------------------------------
 	// CAMERA POV RENDER
 	//-------------------------------------------------------------------------
 	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RENDER_FBO]);
@@ -144,6 +173,60 @@ void Renderer::initFramebuffers()
 	//check
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     	std::cerr << "Cosi sa posralo render" << std::endl;
+    //-------------------------------------------------------------------------
+	// Buffer Split
+	//-------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[SPLIT_FBO]);
+	//textures
+	//create world-space coord texture
+	glGenTextures(1, &splitWSCTex);
+	glBindTexture(GL_TEXTURE_2D, splitWSCTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
+	             WIN_WIDTH, WIN_HEIGHT, 0,
+	             GL_RGBA, GL_FLOAT, 0);
+	//create normal texture
+	glGenTextures(1, &splitNormalTex);
+	glBindTexture(GL_TEXTURE_2D, splitNormalTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
+	             WIN_WIDTH, WIN_HEIGHT, 0,
+	             GL_RGB, GL_FLOAT, 0);
+	//create color texture
+	glGenTextures(1, &splitColorTex);
+	glBindTexture(GL_TEXTURE_2D, splitColorTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
+				 WIN_WIDTH, WIN_HEIGHT, 0,
+				 GL_RGBA, GL_FLOAT, 0);
+	//attach textures to FBO
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+	                       renderDepthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           splitWSCTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+                           splitNormalTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D,
+                           splitColorTex, 0);
+	//set draw buffers
+	GLenum splitMRT[] = {
+		GL_COLOR_ATTACHMENT0,//wsc location0
+		GL_COLOR_ATTACHMENT1,//normals location1
+		GL_COLOR_ATTACHMENT2 //color location2
+	};
+	glDrawBuffers(3, splitMRT);
+	//check
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    	std::cerr << "Cosi sa posralo split" << std::endl;
     //-------------------------------------------------------------------------
 	// LIGHT POV RENDER
 	//-------------------------------------------------------------------------
@@ -233,6 +316,20 @@ void Renderer::initFramebuffers()
 	glDrawBuffers(1, deferredRT);
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     	std::cerr << "Cosi sa posralo deferred" << std::endl;
+    //-------------------------------------------------------------------------
+	// G-BUFFER GATHERING
+	//-------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[GATHER_FBO]);
+	//we will reuse render textures
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+	                       renderDepthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           renderColorTex, 0);
+	//set draw buffer
+	GLenum gatherRT[] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, gatherRT);
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    	std::cerr << "Cosi sa posralo gather" << std::endl;
     //unbind
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -242,9 +339,27 @@ void Renderer::initGeometry(char* modelFile)
 {
 	std::cout << "loading models..." << std::endl;
 	model.import(modelFile);
-	//model.scale();
+	//model.scale(1.0);
 	//model.moveBy(model.getCenter());
 	camera.setTarget(model.getCenter());
+}
+
+//code the halton sequence into RG texture
+void Renderer::initHalton()
+{
+	//bind halton FBO
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[HALTON_FBO]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//change viewport to halton resolution
+	glViewport(0, 0, VPL_SQRT, VPL_SQRT);
+	//draw
+	haltonShader.use();
+	setUniform(haltonShader.vplSqrt, (int)VPL_SQRT);
+	drawFullscreenQuad();
+	//change the viewport back
+	glViewport(0, 0, winWidth, winHeight);
+	//unbind FBO
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 //GLEW and quad initialisation
@@ -329,6 +444,24 @@ void Renderer::initShaders()
 	deferredShader.addShader(FS, "Application/shaders/deferred.fs");
 	deferredShader.link();
 	deferredShader.initUniforms();
+	//halton texture
+	haltonShader.create();
+	haltonShader.addShader(VS, "Application/shaders/quad.vs");
+	haltonShader.addShader(FS, "Application/shaders/halton.fs");
+	haltonShader.link();
+	haltonShader.initUniforms();
+	//G-buffer splitting shader
+	splitShader.create();
+	splitShader.addShader(VS, "Application/shaders/quad.vs");
+	splitShader.addShader(FS, "Application/shaders/gBufSplit.fs");
+	splitShader.link();
+	splitShader.initUniforms();
+	//G-buffer gathering shader
+	gatherShader.create();
+	gatherShader.addShader(VS, "Application/shaders/quad.vs");
+	gatherShader.addShader(FS, "Application/shaders/gBufGather.fs");
+	gatherShader.link();
+	gatherShader.initUniforms();
 }
 
 //----------------------------------------------------------------------------
@@ -341,7 +474,9 @@ void Renderer::draw()
 	glm::mat3 NormalMatrix = glm::transpose(glm::inverse(glm::mat3(light.getViewMatrix()*model.getWorldMatrix())));
 
 	//if change
-		//RSM
+		//---------------------------------------------------------------------------
+		//Render into G-buffer - Camera POV
+		//---------------------------------------------------------------------------
 		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RSM_FBO]);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		renderShader.use();
@@ -365,17 +500,39 @@ void Renderer::draw()
 	setUniform(renderShader.normalMat, NormalMatrix);
 	model.draw();
 	//discontinuity
-	//split
-	//deferred shading
-	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[DEFERRED_FBO]);
+	//set up window vector for both split and gather
+	glm::vec2 window = glm::vec2((float)winWidth, (float)winHeight);
+	//-------------------------------------------------------------------------------
+	//G-BUFFER SPLITTING
+	//-------------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[SPLIT_FBO]);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glm::mat4 DVP = Light::biasMatrix * light.getProjectionMatrix() * light.getViewMatrix();
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, renderWSCTex);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, renderNormalTex);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, renderColorTex);
+	splitShader.use();
+	setUniform(splitShader.origWSCTex, 0);
+	setUniform(splitShader.origNormTex, 1);
+	setUniform(splitShader.origColTex, 2);
+	setUniform(splitShader.blocksX, GBUF_BLOCKS_X);
+	setUniform(splitShader.blocksY, GBUF_BLOCKS_Y);
+	setUniform(splitShader.window, window);
+	drawFullscreenQuad();
+	//-------------------------------------------------------------------------------
+	//DEFERRED SHADING
+	//-------------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[DEFERRED_FBO]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glm::mat4 DVP = Light::biasMatrix * light.getProjectionMatrix() * light.getViewMatrix();
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, splitWSCTex);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, splitNormalTex);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, splitColorTex);
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, rsmDepthTex);
 	deferredShader.use();
@@ -388,7 +545,19 @@ void Renderer::draw()
 	setUniform(deferredShader.cameraPos, camera.getOrigin());
 	setUniform(deferredShader.lightPos, light.getOrigin());
 	drawFullscreenQuad();
-	//gather
+	//-------------------------------------------------------------------------------
+	//G-BUFFER GATHERING
+	//-------------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[GATHER_FBO]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, deferredColTex);
+	gatherShader.use();
+	setUniform(gatherShader.splitTex, 0);
+	setUniform(gatherShader.window, window);
+	setUniform(gatherShader.blocksX, GBUF_BLOCKS_X);
+	setUniform(gatherShader.blocksY, GBUF_BLOCKS_Y);
+	drawFullscreenQuad();
 	//blurX
 	//blurY
 	//-------------------------------------------------------------------------------
@@ -404,7 +573,7 @@ void Renderer::draw()
 	model.drawPointCloud();*/
 	quadShader.use();
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, deferredColTex);
+	glBindTexture(GL_TEXTURE_2D, renderColorTex);
 	setUniform(quadShader.tex, 0);
 	//render quad
 	drawFullscreenQuad();

@@ -10,6 +10,6 @@ layout(location=2) out vec4 diffuseColor;
 void main()
 {
 	wscPosition = Position;
-	normals = Normal;
+	normals = normalize(Normal);
 	diffuseColor = vec4(1.0, 0.0, 0.0, 1.0);
 }

@@ -21,6 +21,7 @@
 #define VBO_NORM 2
 
 #define NUM_VPLS 64
+#define VPL_SQRT 8
 #define POINTS_PER_VPL 400
 
 struct Vector3f

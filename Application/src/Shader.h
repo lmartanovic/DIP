@@ -62,6 +62,7 @@ protected:
 void setUniform(GLint uni, glm::mat4 & value);
 void setUniform(GLint uni, glm::mat3 & value);
 void setUniform(GLint uni, glm::vec3 & value);
+void setUniform(GLint uni, glm::vec2 & value);
 void setUniform(GLint uni, GLint value);
 void setUniform(GLint uni, GLfloat value);
 

@@ -13,17 +13,25 @@
 #include "Light.h"
 #include "Model.h"
 #include "DeferredShader.h"
+#include "GBufGatherShader.h"
+#include "GBufSplitShader.h"
+#include "HaltonShader.h"
 #include "QuadShader.h"
 #include "PointsShader.h"
 #include "RenderShader.h"
 
 #define WIN_HEIGHT 600
 #define WIN_WIDTH 800
+#define GBUF_BLOCKS_X 5
+#define GBUF_BLOCKS_Y 5
 
-#define NUM_FBOS 3
+#define NUM_FBOS 6
 #define RENDER_FBO 0
 #define DEFERRED_FBO 1
 #define RSM_FBO 2
+#define HALTON_FBO 3
+#define SPLIT_FBO 4
+#define GATHER_FBO 5
 
 class Renderer
 {
@@ -39,6 +47,7 @@ private:
 	void initCamera();
 	void initFramebuffers();
 	void initGeometry(char* modelFile);
+	void initHalton();
 	void initLight();
 	void initOpenGL();
 	void initQuad();
@@ -55,6 +64,9 @@ private:
 	Model model;
 	//TODO: nahradit zoznamov vsetkych shaderov
 	DeferredShader deferredShader;
+	GBufGatherShader gatherShader;
+	GBufSplitShader splitShader;
+	HaltonShader haltonShader;
 	QuadShader quadShader;
 	PointsShader pointsShader;
 	RenderShader renderShader;
@@ -64,6 +76,8 @@ private:
 	GLuint renderDepthTex, renderWSCTex, renderNormalTex, renderColorTex;
 	GLuint deferredColTex;
 	GLuint rsmDepthTex, rsmWSCTex, rsmNormalTex, rsmColorTex;
+	GLuint haltonDepthTex, haltonTex;
+	GLuint splitWSCTex, splitNormalTex, splitColorTex;
 	//fullscreen quad rendering
 	GLuint quadVAO;
 	GLuint quadBuffers[2];
