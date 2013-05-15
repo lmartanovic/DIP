@@ -14,7 +14,9 @@ public:
 	void create();
 	void setOrigin(glm::vec3 & o);
 	void setTarget(glm::vec3 & t);
-	void move() {computeViewMatrix();};
+	void move() {computeViewMatrix(); moved = true;};
+	bool hasMoved() {return moved;};
+	void resetMoveFlag() {moved = false;};
 
 	glm::mat4 & getProjectionMatrix() {return projectionMatrix;};
 	glm::mat4 & getViewMatrix() {return viewMatrix;};
@@ -25,6 +27,7 @@ private:
 	void computeProjectionMatrix();
 	void computeViewMatrix();
 
+	bool moved;
 	float fov;
 	float nearPlane;
 	float farPlane;

@@ -62,6 +62,8 @@ void Renderer::run()
 		//TODO: kontrola ci treba kreslit
 		draw();
 		window.display();
+		camera.resetMoveFlag();
+		light.resetMoveFlag();
 	}//main loop
 }
 
@@ -241,7 +243,7 @@ void Renderer::initFramebuffers()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
   	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24,
-				 WIN_WIDTH, WIN_HEIGHT, 0,
+				 SHADOW_WIDTH, SHADOW_HEIGHT, 0,
 				 GL_DEPTH_COMPONENT, GL_FLOAT, 0);
 	//create world-space coord texture
 	glGenTextures(1, &rsmWSCTex);
@@ -251,7 +253,7 @@ void Renderer::initFramebuffers()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
-	             WIN_WIDTH, WIN_HEIGHT, 0,
+	             SHADOW_WIDTH, SHADOW_HEIGHT, 0,
 	             GL_RGBA, GL_FLOAT, 0);
 	//create normal texture
 	glGenTextures(1, &rsmNormalTex);
@@ -261,7 +263,7 @@ void Renderer::initFramebuffers()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F,
-	             WIN_WIDTH, WIN_HEIGHT, 0,
+	             SHADOW_WIDTH, SHADOW_HEIGHT, 0,
 	             GL_RGB, GL_FLOAT, 0);
 	//create color texture
 	glGenTextures(1, &rsmColorTex);
@@ -271,7 +273,7 @@ void Renderer::initFramebuffers()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
-				 WIN_WIDTH, WIN_HEIGHT, 0,
+				 SHADOW_WIDTH, SHADOW_HEIGHT, 0,
 				 GL_RGBA, GL_FLOAT, 0);
 	//attach textures to FBO
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
@@ -401,9 +403,9 @@ void Renderer::initGeometry(char* modelFile)
 {
 	std::cout << "loading models..." << std::endl;
 	model.import(modelFile);
-	//model.scale(1.0);
+	//model.scale(15.0);
 	//model.moveBy(model.getCenter());
-	camera.setTarget(model.getCenter());
+	//camera.setTarget(model.getCenter());
 }
 
 //code the halton sequence into RG texture
@@ -548,137 +550,148 @@ void Renderer::initShaders()
 //Rendering
 void Renderer::draw()
 {
-	ry = 0.05f;
-	model.rotate(ry, glm::vec3(0.0,1.0,0.0));
+	//ry = 0.05f;
+	//model.rotate(ry, glm::vec3(0.0,1.0,0.0));
 	//compute normal matrix for light
 	glm::mat3 NormalMatrix = glm::transpose(glm::inverse(glm::mat3(light.getViewMatrix()*model.getWorldMatrix())));
 	//set up window vector for discontinuity, split and gather
 	glm::vec2 window = glm::vec2((float)winWidth, (float)winHeight);
 
-	//if change
+	if(light.hasMoved())
+	{
 		//---------------------------------------------------------------------------
 		//Render into G-buffer - Camera POV
 		//---------------------------------------------------------------------------
 		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RSM_FBO]);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
 		renderShader.use();
 		setUniform(renderShader.view, light.getViewMatrix());
 		setUniform(renderShader.proj, light.getProjectionMatrix());
 		setUniform(renderShader.world, model.getWorldMatrix());
 		setUniform(renderShader.normalMat, NormalMatrix);
 		model.draw();
+		glViewport(0, 0, winWidth, winHeight);
 		//ISM
 		//pull-push
-	//-------------------------------------------------------------------------------
-	//Render into G-buffer - Camera POV
-	//-------------------------------------------------------------------------------
-	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RENDER_FBO]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	NormalMatrix = glm::transpose(glm::inverse(glm::mat3(camera.getViewMatrix()*model.getWorldMatrix())));
-	renderShader.use();
-	setUniform(renderShader.view, camera.getViewMatrix());
-	setUniform(renderShader.proj, camera.getProjectionMatrix());
-	setUniform(renderShader.world, model.getWorldMatrix());
-	setUniform(renderShader.normalMat, NormalMatrix);
-	model.draw();
-	//-------------------------------------------------------------------------------
-	//Create Discontinuity Buffer
-	//-------------------------------------------------------------------------------
-	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[DISCONTINUITY_FBO]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, renderDepthTex);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, renderNormalTex);
-	discontinuityShader.use();
-	setUniform(discontinuityShader.depthTex, 0);
-	setUniform(discontinuityShader.normalTex, 1);
-	setUniform(discontinuityShader.distThresh, (float)0.25);
-  	setUniform(discontinuityShader.normThresh, (float)0.5);
-	setUniform(discontinuityShader.window, window);
-	drawFullscreenQuad();
-	//-------------------------------------------------------------------------------
-	//G-BUFFER SPLITTING
-	//-------------------------------------------------------------------------------
-	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[SPLIT_FBO]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, renderWSCTex);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, renderNormalTex);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, renderColorTex);
-	splitShader.use();
-	setUniform(splitShader.origWSCTex, 0);
-	setUniform(splitShader.origNormTex, 1);
-	setUniform(splitShader.origColTex, 2);
-	setUniform(splitShader.blocksX, GBUF_BLOCKS_X);
-	setUniform(splitShader.blocksY, GBUF_BLOCKS_Y);
-	setUniform(splitShader.window, window);
-	drawFullscreenQuad();
-	//-------------------------------------------------------------------------------
-	//DEFERRED SHADING
-	//-------------------------------------------------------------------------------
-	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[DEFERRED_FBO]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glm::mat4 DVP = Light::biasMatrix * light.getProjectionMatrix() * light.getViewMatrix();
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, splitWSCTex);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, splitNormalTex);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, splitColorTex);
-	glActiveTexture(GL_TEXTURE3);
-	glBindTexture(GL_TEXTURE_2D, rsmDepthTex);
-	deferredShader.use();
-	setUniform(deferredShader.wscTex, 0);
-	setUniform(deferredShader.normalTex, 1);
-	setUniform(deferredShader.colorTex, 2);
-	setUniform(deferredShader.shadowTex, 3);
-	setUniform(deferredShader.view, camera.getViewMatrix());
-	setUniform(deferredShader.biasDVP, DVP);
-	setUniform(deferredShader.cameraPos, camera.getOrigin());
-	setUniform(deferredShader.lightPos, light.getOrigin());
-	drawFullscreenQuad();
-	//-------------------------------------------------------------------------------
-	//G-BUFFER GATHERING
-	//-------------------------------------------------------------------------------
-	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[GATHER_FBO]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, deferredColTex);
-	gatherShader.use();
-	setUniform(gatherShader.splitTex, 0);
-	setUniform(gatherShader.window, window);
-	setUniform(gatherShader.blocksX, GBUF_BLOCKS_X);
-	setUniform(gatherShader.blocksY, GBUF_BLOCKS_Y);
-	drawFullscreenQuad();
-	//-------------------------------------------------------------------------------
-	//X-BLUR
-	//-------------------------------------------------------------------------------
-	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[XBLUR_FBO]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, discontinuityTex);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, renderColorTex);	//output of gathering phase
-	xBlurShader.use();
-	setUniform(xBlurShader.discontinuityTex, 0);
-	setUniform(xBlurShader.inputTex, 1);
-	setUniform(xBlurShader.window, window);
-	drawFullscreenQuad();	//output in deferredColTex
-	//-------------------------------------------------------------------------------
-	//X-BLUR
-	//-------------------------------------------------------------------------------
-	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[YBLUR_FBO]);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, deferredColTex);	//output of xBlur phase
-	yBlurShader.use();
-	setUniform(yBlurShader.discontinuityTex, 0);	//TEXTURE0 still holds discontinuityTex
-	setUniform(yBlurShader.inputTex, 1);
-	setUniform(yBlurShader.window, window);
-	drawFullscreenQuad();	//output in renderColorTex
+	}
+	if(camera.hasMoved())	//recompute camera POV buffers only if necessary
+	{
+		//-------------------------------------------------------------------------------
+		//Render into G-buffer - Camera POV
+		//-------------------------------------------------------------------------------
+		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RENDER_FBO]);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		NormalMatrix = glm::transpose(glm::inverse(glm::mat3(camera.getViewMatrix()*model.getWorldMatrix())));
+		renderShader.use();
+		setUniform(renderShader.view, camera.getViewMatrix());
+		setUniform(renderShader.proj, camera.getProjectionMatrix());
+		setUniform(renderShader.world, model.getWorldMatrix());
+		setUniform(renderShader.normalMat, NormalMatrix);
+		model.draw();
+		//-------------------------------------------------------------------------------
+		//Create Discontinuity Buffer
+		//-------------------------------------------------------------------------------
+		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[DISCONTINUITY_FBO]);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, renderDepthTex);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, renderNormalTex);
+		discontinuityShader.use();
+		setUniform(discontinuityShader.depthTex, 0);
+		setUniform(discontinuityShader.normalTex, 1);
+		setUniform(discontinuityShader.distThresh, (float)0.25);
+	  	setUniform(discontinuityShader.normThresh, (float)0.5);
+		setUniform(discontinuityShader.window, window);
+		drawFullscreenQuad();
+		//-------------------------------------------------------------------------------
+		//G-BUFFER SPLITTING
+		//-------------------------------------------------------------------------------
+		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[SPLIT_FBO]);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, renderWSCTex);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, renderNormalTex);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, renderColorTex);
+		splitShader.use();
+		setUniform(splitShader.origWSCTex, 0);
+		setUniform(splitShader.origNormTex, 1);
+		setUniform(splitShader.origColTex, 2);
+		setUniform(splitShader.blocksX, GBUF_BLOCKS_X);
+		setUniform(splitShader.blocksY, GBUF_BLOCKS_Y);
+		setUniform(splitShader.window, window);
+		drawFullscreenQuad();
+	}
+	//only if any change
+	if(light.hasMoved() || camera.hasMoved())
+	{
+		//-------------------------------------------------------------------------------
+		//DEFERRED SHADING
+		//-------------------------------------------------------------------------------
+		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[DEFERRED_FBO]);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glm::mat4 DVP = Light::biasMatrix * light.getProjectionMatrix() * light.getViewMatrix();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, splitWSCTex);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, splitNormalTex);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, splitColorTex);
+		glActiveTexture(GL_TEXTURE3);
+		glBindTexture(GL_TEXTURE_2D, rsmDepthTex);
+		deferredShader.use();
+		setUniform(deferredShader.wscTex, 0);
+		setUniform(deferredShader.normalTex, 1);
+		setUniform(deferredShader.colorTex, 2);
+		setUniform(deferredShader.shadowTex, 3);
+		setUniform(deferredShader.view, camera.getViewMatrix());
+		setUniform(deferredShader.biasDVP, DVP);
+		setUniform(deferredShader.cameraPos, camera.getOrigin());
+		setUniform(deferredShader.lightPos, light.getOrigin());
+		drawFullscreenQuad();
+		//-------------------------------------------------------------------------------
+		//G-BUFFER GATHERING
+		//-------------------------------------------------------------------------------
+		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[GATHER_FBO]);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, deferredColTex);
+		gatherShader.use();
+		setUniform(gatherShader.splitTex, 0);
+		setUniform(gatherShader.window, window);
+		setUniform(gatherShader.blocksX, GBUF_BLOCKS_X);
+		setUniform(gatherShader.blocksY, GBUF_BLOCKS_Y);
+		drawFullscreenQuad();
+		//-------------------------------------------------------------------------------
+		//X-BLUR
+		//-------------------------------------------------------------------------------
+		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[XBLUR_FBO]);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, discontinuityTex);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, renderColorTex);	//output of gathering phase
+		xBlurShader.use();
+		setUniform(xBlurShader.discontinuityTex, 0);
+		setUniform(xBlurShader.inputTex, 1);
+		setUniform(xBlurShader.window, window);
+		drawFullscreenQuad();	//output in deferredColTex
+		//-------------------------------------------------------------------------------
+		//X-BLUR
+		//-------------------------------------------------------------------------------
+		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[YBLUR_FBO]);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, deferredColTex);	//output of xBlur phase
+		yBlurShader.use();
+		setUniform(yBlurShader.discontinuityTex, 0);	//TEXTURE0 still holds discontinuityTex
+		setUniform(yBlurShader.inputTex, 1);
+		setUniform(yBlurShader.window, window);
+		drawFullscreenQuad();	//output in renderColorTex
+	}
 	//-------------------------------------------------------------------------------
 	// Show Result
 	//-------------------------------------------------------------------------------
@@ -720,27 +733,27 @@ void Renderer::handleKeyPressed(sf::Event & event)
 		running = false;
 		break;
 	case sf::Keyboard::Down:
-		ol.z += 1.0f;
+		ol.z += 0.2f;
 		light.move();
 		break;
 	case sf::Keyboard::Up:
-		ol.z -= 1.0f;
+		ol.z -= 0.2f;
 		light.move();
 		break;
 	case sf::Keyboard::Left:
-		ol.x -= 1.0f;
+		ol.x -= 0.2f;
 		light.move();
 		break;
 	case sf::Keyboard::Right:
-		ol.x += 1.0f;
+		ol.x += 0.2f;
 		light.move();
 		break;
 	case sf::Keyboard::Add:
-		ol.y += 1.0f;
+		ol.y += 0.2f;
 		light.move();
 		break;
 	case sf::Keyboard::Subtract:
-		ol.y -= 1.0f;
+		ol.y -= 0.2f;
 		light.move();
 		break;
 	case sf::Keyboard::W:
@@ -770,6 +783,8 @@ void Renderer::handleKeyPressed(sf::Event & event)
 	default:
 		break;
 	}
+
+	//std::cout << "light " << oc.x << "," << oc.y << "," << oc.z << std::endl;
 }
 
 //Mouse

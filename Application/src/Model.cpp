@@ -77,7 +77,7 @@ bool Model::fromScene(const aiScene* scene, const std::string & filename)
 	}
 
 	//generate point cloud from complete model/scene
-	generatePointCloud(positions, indices);
+	//generatePointCloud(positions, indices);
 	//set object center based on geometry
 	setCenter(positions);
 	//generate VBO and EBO

@@ -17,14 +17,16 @@ void main()
 {
 	vec4 wpos = texture2D(wscTex, TexCoord);
 	vec4 shPos = BiasDVP * wpos;
+
 	shPos.z -= 0.005;
+	
 	float shadow = textureProj(shadowTex, shPos);
 	if(shadow == 0.0) fragColor = vec4(0.0);
 	else{
+		vec4 color = texture2D(colorTex, TexCoord);
 		vec3 L = normalize(lightPos - wpos.xyz);
 		vec3 N = texture2D(normalTex, TexCoord).xyz;
 		float cosTheta = max(0.0, dot(N,L));
-		vec4 color = texture2D(colorTex, TexCoord);
 		vec4 diffuse = color*cosTheta;
 
 		vec4 esPos = View * wpos;
