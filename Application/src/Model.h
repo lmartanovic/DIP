@@ -22,7 +22,7 @@
 
 #define NUM_VPLS 64
 #define VPL_SQRT 8
-#define POINTS_PER_VPL 400
+#define POINTS_PER_VPL 16000
 
 struct Vector3f
 {
@@ -41,9 +41,9 @@ struct MeshInfo
 struct PointVertex
 {
 	float position[3];
+	int VPLindex;
 	float barycentric[3];
 	unsigned int triangleIndex;
-	unsigned int VPLindex;
 };
 
 struct Triangle

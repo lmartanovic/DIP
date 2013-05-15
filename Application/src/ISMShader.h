@@ -3,20 +3,18 @@
 class ISMShader : public Shader
 {
 public:
-	virtual void initUniforms();
+	virtual void initUniforms()
+	{
+		vplSqrt = glGetUniformLocation(id, "vplSqrt");
+		haltonTex = glGetUniformLocation(id, "halton");
+		wscTex = glGetUniformLocation(id, "wscTex");
+		normalTex = glGetUniformLocation(id, "normalTex");
+		world = glGetUniformLocation(id, "World");
+	}
 
-	GLint VPLSQRT;
-	GLint haltonTexUni;
-	GLint wscTexUni;
-	GLint normalTexUni;
-	GLint worldMatUni;
+	GLint vplSqrt;
+	GLint haltonTex;
+	GLint wscTex;
+	GLint normalTex;
+	GLint world;
 };
-
-void ISMShader::initUniforms()
-{
-	VPLSQRT = glGetUniformLocation(id, "VPLSQRT");
-	haltonTexUni = glGetUniformLocation(id, "halton");
-	wscTexUni = glGetUniformLocation(id, "wscTex");
-	normalTexUni = glGetUniformLocation(id, "normalTex");
-	worldMatUni = glGetUniformLocation(id, "WorldMat");
-}

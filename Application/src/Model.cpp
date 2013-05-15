@@ -77,7 +77,7 @@ bool Model::fromScene(const aiScene* scene, const std::string & filename)
 	}
 
 	//generate point cloud from complete model/scene
-	//generatePointCloud(positions, indices);
+	generatePointCloud(positions, indices);
 	//set object center based on geometry
 	setCenter(positions);
 	//generate VBO and EBO
@@ -268,7 +268,7 @@ void Model::generatePointCloud(std::vector<Vector3f> & positions,
 	PointVertex point;
 	//sample as many points as necessary
 	std::cout << "sampling..." << std::endl;
-	for(unsigned int i = 0; i < NUM_VPLS*POINTS_PER_VPL; i++)
+	for(int i = 0; i < NUM_VPLS*POINTS_PER_VPL; i++)
 	{
 		//get group bounds
 		unsigned int end =  groups.at(groupIndex);
@@ -282,7 +282,7 @@ void Model::generatePointCloud(std::vector<Vector3f> & positions,
     	if(groupIndex > (groups.size() - 1))
       		groupIndex = 1;
       	//sample
-      	point.VPLindex = i % NUM_VPLS;
+      	point.VPLindex = i % (int)NUM_VPLS;
       	point.triangleIndex = trIndex;
       	samplePoint(positions, triangles[trIndex], point);
       	points.push_back(point);
@@ -300,6 +300,11 @@ void Model::generatePointCloud(std::vector<Vector3f> & positions,
 	glEnableVertexAttribArray(0);	//position
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(PointVertex),
                           (void*)offsetof(PointVertex, position));
+	glEnableVertexAttribArray(1);	//VPLindex
+	glVertexAttribIPointer(1, 1, GL_INT, sizeof(PointVertex),
+                          (void*)offsetof(PointVertex, VPLindex));
+	//glVertexAttribPointer(1, 1, GL_INT, GL_FALSE, sizeof(PointVertex),
+	//					  (void*)offsetof(PointVertex, VPLindex));
 	//unbind and bind the main VAO back
 	glBindVertexArray(mainVAO);
 }

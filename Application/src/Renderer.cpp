@@ -394,7 +394,38 @@ void Renderer::initFramebuffers()
 	glDrawBuffers(1, yBlurRT);
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     	std::cerr << "Cosi sa posralo yBlur" << std::endl;
-    //unbind
+    //-------------------------------------------------------------------------
+	// ISM and Ping-Pong
+	//-------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[ISM_FBO]);
+	//create ping
+	glGenTextures(1, &ISMTextureLevel0);
+	glBindTexture(GL_TEXTURE_2D, ISMTextureLevel0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+	             VPL_SQRT*ISM_TILE_EDGE+(VPL_SQRT/2*ISM_TILE_EDGE),
+	             VPL_SQRT*ISM_TILE_EDGE, 0,
+	             GL_RGBA, GL_FLOAT, 0);
+	//create pong
+	glGenTextures(1, &ISMTextureLevel1);
+	glBindTexture(GL_TEXTURE_2D, ISMTextureLevel1);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
+	             VPL_SQRT*ISM_TILE_EDGE+(VPL_SQRT/2*ISM_TILE_EDGE),
+	             VPL_SQRT*ISM_TILE_EDGE, 0,
+	             GL_RGBA, GL_FLOAT, 0);
+	//attach ping
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+	                       ISMTextureLevel0, 0);
+	//attach pong
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D,
+	                       ISMTextureLevel1, 0);
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Cosi sa posralo ISM" << std::endl;
+
+	//unbind
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
@@ -435,6 +466,7 @@ void Renderer::initOpenGL()
 	//OGL inits
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
+	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 	glCullFace(GL_BACK);
 }
 
@@ -459,7 +491,7 @@ void Renderer::initQuad()
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(QuadVertex),
                           (void*)offsetof(QuadVertex, position));
 	glEnableVertexAttribArray(1);	//enable texcoord
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(QuadVertex),
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(QuadVertex),
                           (void*)offsetof(QuadVertex, texcoord));
 	//unbind
 	glBindVertexArray(0);
@@ -544,6 +576,24 @@ void Renderer::initShaders()
 	yBlurShader.addShader(FS, "Application/shaders/yBlur.fs");
 	yBlurShader.link();
 	yBlurShader.initUniforms();
+	//ISM creation
+	ismShader.create();
+	ismShader.addShader(VS, "Application/shaders/ism.vs");
+	ismShader.addShader(FS, "Application/shaders/ism.fs");
+	ismShader.link();
+	ismShader.initUniforms();
+	//pull
+	pullShader.create();
+	pullShader.addShader(VS, "Application/shaders/quad.vs");
+	pullShader.addShader(FS, "Application/shaders/pull.fs");
+	pullShader.link();
+	pullShader.initUniforms();
+	//push
+	pushShader.create();
+	pushShader.addShader(VS, "Application/shaders/quad.vs");
+	pushShader.addShader(FS, "Application/shaders/push.fs");
+	pushShader.link();
+	pushShader.initUniforms();
 }
 
 //----------------------------------------------------------------------------
@@ -556,6 +606,7 @@ void Renderer::draw()
 	glm::mat3 NormalMatrix = glm::transpose(glm::inverse(glm::mat3(light.getViewMatrix()*model.getWorldMatrix())));
 	//set up window vector for discontinuity, split and gather
 	glm::vec2 window = glm::vec2((float)winWidth, (float)winHeight);
+	glm::vec2 shadowViewport = glm::vec2((float)SHADOW_WIDTH, (float)SHADOW_HEIGHT);
 
 	if(light.hasMoved())
 	{
@@ -571,9 +622,84 @@ void Renderer::draw()
 		setUniform(renderShader.world, model.getWorldMatrix());
 		setUniform(renderShader.normalMat, NormalMatrix);
 		model.draw();
+		//---------------------------------------------------------------------------
+		//ISM creation
+		//---------------------------------------------------------------------------
+		glClearColor(1.0, 1.0, 1.0, 0.0);
+		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[ISM_FBO]);
+		GLenum ismRT[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+		glDrawBuffers(1, &ismRT[0]);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glViewport(0,0, VPL_SQRT*ISM_TILE_EDGE, VPL_SQRT*ISM_TILE_EDGE);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, haltonTex);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, rsmWSCTex);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, rsmNormalTex);
+		ismShader.use();
+		setUniform(ismShader.vplSqrt, (int)VPL_SQRT);
+		setUniform(ismShader.haltonTex, 0);
+		setUniform(ismShader.wscTex, 1);
+		setUniform(ismShader.normalTex, 2);
+		setUniform(ismShader.world, model.getWorldMatrix());
+		model.drawPointCloud();
+		//---------------------------------------------------------------------------
+		//Pull-Push
+		//---------------------------------------------------------------------------
+		//Pull
+		//----
+		pullShader.use();
+		//change output buffer
+		glDrawBuffers(1, &ismRT[1]);
+		//change viewport and texcoord
+		glViewport(VPL_SQRT*ISM_TILE_EDGE, VPL_SQRT*ISM_TILE_EDGE/2,
+               	  (VPL_SQRT*ISM_TILE_EDGE)/2, (VPL_SQRT*ISM_TILE_EDGE)/2);
+		setQuadTexCoord(0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, ISMTextureLevel0);
+		setUniform(pullShader.inputTex, 0);
+		setUniform(pullShader.viewport, shadowViewport);
+		drawFullscreenQuad();
+		//----
+		glDrawBuffers(1, &ismRT[0]);
+		glViewport(VPL_SQRT*ISM_TILE_EDGE, VPL_SQRT*ISM_TILE_EDGE/4,
+              	  (VPL_SQRT*ISM_TILE_EDGE)/4, (VPL_SQRT*ISM_TILE_EDGE)/4);
+		setQuadTexCoord(1);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, ISMTextureLevel1);
+		setUniform(pullShader.inputTex, 1);
+		drawFullscreenQuad();
+		//----
+		//Push
+		//----
+		pushShader.use();
+		glViewport(VPL_SQRT*ISM_TILE_EDGE, VPL_SQRT*ISM_TILE_EDGE/2,
+               	  (VPL_SQRT*ISM_TILE_EDGE)/2, (VPL_SQRT*ISM_TILE_EDGE)/2);
+		glActiveTexture(GL_TEXTURE0);
+    	glBindTexture(GL_TEXTURE_2D, ISMTextureLevel0);
+    	glActiveTexture(GL_TEXTURE1);
+    	glBindTexture(GL_TEXTURE_2D, ISMTextureLevel1);
+    	setUniform(pushShader.offset, (float)2.0/3);
+    	setUniform(pushShader.lvlSwitch, 1);
+    	setUniform(pushShader.viewport, shadowViewport);
+    	setUniform(pushShader.coarserTex, 0);
+    	setUniform(pushShader.currentTex, 1);
+    	drawFullscreenQuad();
+    	//----
+    	glDrawBuffers(1, &ismRT[1]);
+    	glViewport(0,0, VPL_SQRT*ISM_TILE_EDGE, VPL_SQRT*ISM_TILE_EDGE);
+    	setQuadTexCoord(0);
+    	glActiveTexture(GL_TEXTURE0);
+    	glBindTexture(GL_TEXTURE_2D, ISMTextureLevel0);
+    	glActiveTexture(GL_TEXTURE1);
+    	glBindTexture(GL_TEXTURE_2D, ISMTextureLevel0);
+    	setUniform(pushShader.lvlSwitch, 0);
+    	drawFullscreenQuad();
+		//reset quad and clear color
+		setQuadTexCoord(-1);
+		glClearColor(0.0, 0.0, 0.0, 0.0);
 		glViewport(0, 0, winWidth, winHeight);
-		//ISM
-		//pull-push
 	}
 	if(camera.hasMoved())	//recompute camera POV buffers only if necessary
 	{
@@ -669,6 +795,7 @@ void Renderer::draw()
 		//X-BLUR
 		//-------------------------------------------------------------------------------
 		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[XBLUR_FBO]);
+		glClearColor(1.0, 1.0, 1.0, 0.0);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, discontinuityTex);
@@ -705,7 +832,7 @@ void Renderer::draw()
 	model.drawPointCloud();*/
 	quadShader.use();
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, renderColorTex);
+	glBindTexture(GL_TEXTURE_2D, ISMTextureLevel1);
 	setUniform(quadShader.tex, 0);
 	//render quad
 	drawFullscreenQuad();
@@ -791,4 +918,50 @@ void Renderer::handleKeyPressed(sf::Event & event)
 void Renderer::handleMouseWheel(sf::Event & event)
 {
 	//TODO: change rotation based on mouse.wheel.delta
+}
+
+//-1 -> default
+void Renderer::setQuadTexCoord(int mipMapLevel)
+{
+  switch(mipMapLevel)
+  {
+    case 0:
+      quadVertices[0].texcoord[0] = 0;
+      quadVertices[0].texcoord[1] = 0;
+      quadVertices[1].texcoord[0] = 2.0/3;
+      quadVertices[1].texcoord[1] = 0.0;
+      quadVertices[2].texcoord[0] = 2.0/3;
+      quadVertices[2].texcoord[1] = 1.0;
+      quadVertices[3].texcoord[0] = 0.0;
+      quadVertices[3].texcoord[1] = 1.0;
+      break;
+    case 1:
+      quadVertices[0].texcoord[0] = 2.0/3;
+      quadVertices[0].texcoord[1] = 0.5;
+      quadVertices[1].texcoord[0] = 1.0;
+      quadVertices[1].texcoord[1] = 0.5;
+      quadVertices[2].texcoord[0] = 1.0;
+      quadVertices[2].texcoord[1] = 1.0;
+      quadVertices[3].texcoord[0] = 2.0/3;
+      quadVertices[3].texcoord[1] = 1.0;
+      break;
+    default:
+      quadVertices[0].texcoord[0] = 0.0;
+	  quadVertices[0].texcoord[1] = 0.0;
+	  quadVertices[1].texcoord[0] = 1.0;
+	  quadVertices[1].texcoord[1] = 0.0;
+	  quadVertices[2].texcoord[0] = 1.0;
+	  quadVertices[2].texcoord[1] = 1.0;
+	  quadVertices[3].texcoord[0] = 0.0;
+	  quadVertices[3].texcoord[1] = 1.0;
+	  break;
+  }
+  //bind quad
+  glBindVertexArray(quadVAO);
+  glBindBuffer(GL_ARRAY_BUFFER, quadBuffers[0]);
+  //change data
+  glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices),
+               quadVertices, GL_STATIC_DRAW);
+  //unbind
+  glBindVertexArray(0);
 }

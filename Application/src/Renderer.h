@@ -18,16 +18,20 @@
 #include "GBufGatherShader.h"
 #include "GBufSplitShader.h"
 #include "HaltonShader.h"
+#include "ISMShader.h"
 #include "QuadShader.h"
 #include "PointsShader.h"
+#include "PullShader.h"
+#include "PushShader.h"
 #include "RenderShader.h"
 
 #define WIN_HEIGHT 600
 #define WIN_WIDTH 800
 #define GBUF_BLOCKS_X 5
 #define GBUF_BLOCKS_Y 5
+#define ISM_TILE_EDGE 256	//pixels per ISM tile
 
-#define NUM_FBOS 9
+#define NUM_FBOS 10
 #define RENDER_FBO 0
 #define DEFERRED_FBO 1
 #define RSM_FBO 2
@@ -37,6 +41,7 @@
 #define DISCONTINUITY_FBO 6
 #define XBLUR_FBO 7
 #define YBLUR_FBO 8
+#define ISM_FBO 9
 
 class Renderer
 {
@@ -58,6 +63,7 @@ private:
 	void initQuad();
 	void initSFML();
 	void initShaders();
+	void setQuadTexCoord(int mipMapLevel);
 
 	bool running;
 	int winHeight;
@@ -74,8 +80,11 @@ private:
 	GBufGatherShader gatherShader;
 	GBufSplitShader splitShader;
 	HaltonShader haltonShader;
+	ISMShader ismShader;
 	QuadShader quadShader;
 	PointsShader pointsShader;
+	PullShader pullShader;
+	PushShader pushShader;
 	RenderShader renderShader;
 	//FBO array
 	GLuint FBOs[NUM_FBOS];
@@ -86,6 +95,7 @@ private:
 	GLuint haltonDepthTex, haltonTex;
 	GLuint splitWSCTex, splitNormalTex, splitColorTex;
 	GLuint discontinuityDepthTex, discontinuityTex;
+	GLuint ISMTextureLevel0, ISMTextureLevel1;
 	//fullscreen quad rendering
 	GLuint quadVAO;
 	GLuint quadBuffers[2];

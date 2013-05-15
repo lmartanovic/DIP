@@ -3,16 +3,12 @@
 class PullShader : public Shader
 {
 public:
-  virtual void initUniforms();
+  virtual void initUniforms()
+  {
+	  inputTex = glGetUniformLocation(id, "inputTex");
+	  viewport = glGetUniformLocation(id, "viewport");
+  }	
 
-  GLint mapUni;
-  GLint width;
-  GLint height;
+  GLint inputTex;
+  GLint viewport;
 };
-
-void PullShader::initUniforms()
-{
-  mapUni = glGetUniformLocation(id, "map");
-  width = glGetUniformLocation(id, "width");
-  height = glGetUniformLocation(id, "height");
-}
