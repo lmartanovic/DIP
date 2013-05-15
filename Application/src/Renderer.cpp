@@ -330,6 +330,68 @@ void Renderer::initFramebuffers()
 	glDrawBuffers(1, gatherRT);
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
     	std::cerr << "Cosi sa posralo gather" << std::endl;
+    //-------------------------------------------------------------------------
+	// DISCONTINUITY BUFFER CREATION
+	//-------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[DISCONTINUITY_FBO]);
+	//cretae textures
+	glGenTextures(1, &discontinuityDepthTex);
+	glBindTexture(GL_TEXTURE_2D, discontinuityDepthTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24,
+				 WIN_WIDTH, WIN_HEIGHT, 0,
+				 GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+	//color
+	glGenTextures(1, &discontinuityTex);
+	glBindTexture(GL_TEXTURE_2D, discontinuityTex);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
+	             WIN_WIDTH, WIN_HEIGHT, 0,
+	             GL_RGBA, GL_FLOAT, 0);
+	//attach textures
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+	                       discontinuityDepthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           discontinuityTex, 0);
+	//set draw buffer
+	GLenum discontinuityRT[] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, discontinuityRT);
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    	std::cerr << "Cosi sa posralo discontinuity" << std::endl;
+    //-------------------------------------------------------------------------
+	// X BLUR
+	//-------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[XBLUR_FBO]);
+	//we will reuse render textures
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+	                       renderDepthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           deferredColTex, 0);
+	//set draw buffer
+	GLenum xBlurRT[] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, xBlurRT);
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    	std::cerr << "Cosi sa posralo xBlur" << std::endl;
+    //-------------------------------------------------------------------------
+	// Y BLUR
+	//-------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[YBLUR_FBO]);
+	//we will reuse render textures
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D,
+	                       renderDepthTex, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+                           renderColorTex, 0);
+	//set draw buffer
+	GLenum yBlurRT[] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, yBlurRT);
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+    	std::cerr << "Cosi sa posralo yBlur" << std::endl;
     //unbind
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -462,6 +524,24 @@ void Renderer::initShaders()
 	gatherShader.addShader(FS, "Application/shaders/gBufGather.fs");
 	gatherShader.link();
 	gatherShader.initUniforms();
+	//discontinuity buffer creation
+	discontinuityShader.create();
+	discontinuityShader.addShader(VS, "Application/shaders/quad.vs");
+	discontinuityShader.addShader(FS, "Application/shaders/discontinuity.fs");
+	discontinuityShader.link();
+	discontinuityShader.initUniforms();
+	//x Blur
+	xBlurShader.create();
+	xBlurShader.addShader(VS, "Application/shaders/quad.vs");
+	xBlurShader.addShader(FS, "Application/shaders/xBlur.fs");
+	xBlurShader.link();
+	xBlurShader.initUniforms();
+	//y Blur
+	yBlurShader.create();
+	yBlurShader.addShader(VS, "Application/shaders/quad.vs");
+	yBlurShader.addShader(FS, "Application/shaders/yBlur.fs");
+	yBlurShader.link();
+	yBlurShader.initUniforms();
 }
 
 //----------------------------------------------------------------------------
@@ -472,6 +552,8 @@ void Renderer::draw()
 	model.rotate(ry, glm::vec3(0.0,1.0,0.0));
 	//compute normal matrix for light
 	glm::mat3 NormalMatrix = glm::transpose(glm::inverse(glm::mat3(light.getViewMatrix()*model.getWorldMatrix())));
+	//set up window vector for discontinuity, split and gather
+	glm::vec2 window = glm::vec2((float)winWidth, (float)winHeight);
 
 	//if change
 		//---------------------------------------------------------------------------
@@ -499,9 +581,22 @@ void Renderer::draw()
 	setUniform(renderShader.world, model.getWorldMatrix());
 	setUniform(renderShader.normalMat, NormalMatrix);
 	model.draw();
-	//discontinuity
-	//set up window vector for both split and gather
-	glm::vec2 window = glm::vec2((float)winWidth, (float)winHeight);
+	//-------------------------------------------------------------------------------
+	//Create Discontinuity Buffer
+	//-------------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[DISCONTINUITY_FBO]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, renderDepthTex);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, renderNormalTex);
+	discontinuityShader.use();
+	setUniform(discontinuityShader.depthTex, 0);
+	setUniform(discontinuityShader.normalTex, 1);
+	setUniform(discontinuityShader.distThresh, (float)0.25);
+  	setUniform(discontinuityShader.normThresh, (float)0.5);
+	setUniform(discontinuityShader.window, window);
+	drawFullscreenQuad();
 	//-------------------------------------------------------------------------------
 	//G-BUFFER SPLITTING
 	//-------------------------------------------------------------------------------
@@ -558,8 +653,32 @@ void Renderer::draw()
 	setUniform(gatherShader.blocksX, GBUF_BLOCKS_X);
 	setUniform(gatherShader.blocksY, GBUF_BLOCKS_Y);
 	drawFullscreenQuad();
-	//blurX
-	//blurY
+	//-------------------------------------------------------------------------------
+	//X-BLUR
+	//-------------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[XBLUR_FBO]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, discontinuityTex);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, renderColorTex);	//output of gathering phase
+	xBlurShader.use();
+	setUniform(xBlurShader.discontinuityTex, 0);
+	setUniform(xBlurShader.inputTex, 1);
+	setUniform(xBlurShader.window, window);
+	drawFullscreenQuad();	//output in deferredColTex
+	//-------------------------------------------------------------------------------
+	//X-BLUR
+	//-------------------------------------------------------------------------------
+	glBindFramebuffer(GL_FRAMEBUFFER, FBOs[YBLUR_FBO]);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, deferredColTex);	//output of xBlur phase
+	yBlurShader.use();
+	setUniform(yBlurShader.discontinuityTex, 0);	//TEXTURE0 still holds discontinuityTex
+	setUniform(yBlurShader.inputTex, 1);
+	setUniform(yBlurShader.window, window);
+	drawFullscreenQuad();	//output in renderColorTex
 	//-------------------------------------------------------------------------------
 	// Show Result
 	//-------------------------------------------------------------------------------
@@ -592,7 +711,8 @@ void Renderer::drawFullscreenQuad()
 //Keyboard
 void Renderer::handleKeyPressed(sf::Event & event)
 {
-	glm::vec3& o = light.getOrigin();
+	glm::vec3& ol = light.getOrigin();
+	glm::vec3& oc = camera.getOrigin();
 	
 	switch(event.key.code)
 	{
@@ -600,28 +720,52 @@ void Renderer::handleKeyPressed(sf::Event & event)
 		running = false;
 		break;
 	case sf::Keyboard::Down:
-		o.z += 1.0f;
+		ol.z += 1.0f;
 		light.move();
 		break;
 	case sf::Keyboard::Up:
-		o.z -= 1.0f;
+		ol.z -= 1.0f;
 		light.move();
 		break;
 	case sf::Keyboard::Left:
-		o.x -= 1.0f;
+		ol.x -= 1.0f;
 		light.move();
 		break;
 	case sf::Keyboard::Right:
-		o.x += 1.0f;
+		ol.x += 1.0f;
 		light.move();
 		break;
 	case sf::Keyboard::Add:
-		o.y += 1.0f;
+		ol.y += 1.0f;
 		light.move();
 		break;
 	case sf::Keyboard::Subtract:
-		o.y -= 1.0f;
+		ol.y -= 1.0f;
 		light.move();
+		break;
+	case sf::Keyboard::W:
+		oc.z -= 1.0f;
+		camera.move();
+		break;
+	case sf::Keyboard::S:
+		oc.z += 1.0f;
+		camera.move();
+		break;
+	case sf::Keyboard::A:
+		oc.x -= 1.0f;
+		camera.move();
+		break;
+	case sf::Keyboard::D:
+		oc.x += 1.0f;
+		camera.move();
+		break;
+	case sf::Keyboard::Q:
+		oc.y += 1.0f;
+		camera.move();
+		break;
+	case sf::Keyboard::E:
+		oc.y -= 1.0f;
+		camera.move();
 		break;
 	default:
 		break;

@@ -12,7 +12,9 @@
 #include "Camera.h"
 #include "Light.h"
 #include "Model.h"
+#include "BlurShader.h"
 #include "DeferredShader.h"
+#include "DiscontinuityShader.h"
 #include "GBufGatherShader.h"
 #include "GBufSplitShader.h"
 #include "HaltonShader.h"
@@ -25,13 +27,16 @@
 #define GBUF_BLOCKS_X 5
 #define GBUF_BLOCKS_Y 5
 
-#define NUM_FBOS 6
+#define NUM_FBOS 9
 #define RENDER_FBO 0
 #define DEFERRED_FBO 1
 #define RSM_FBO 2
 #define HALTON_FBO 3
 #define SPLIT_FBO 4
 #define GATHER_FBO 5
+#define DISCONTINUITY_FBO 6
+#define XBLUR_FBO 7
+#define YBLUR_FBO 8
 
 class Renderer
 {
@@ -63,7 +68,9 @@ private:
 	Light light;
 	Model model;
 	//TODO: nahradit zoznamov vsetkych shaderov
+	BlurShader xBlurShader, yBlurShader;
 	DeferredShader deferredShader;
+	DiscontinuityShader discontinuityShader;
 	GBufGatherShader gatherShader;
 	GBufSplitShader splitShader;
 	HaltonShader haltonShader;
@@ -78,6 +85,7 @@ private:
 	GLuint rsmDepthTex, rsmWSCTex, rsmNormalTex, rsmColorTex;
 	GLuint haltonDepthTex, haltonTex;
 	GLuint splitWSCTex, splitNormalTex, splitColorTex;
+	GLuint discontinuityDepthTex, discontinuityTex;
 	//fullscreen quad rendering
 	GLuint quadVAO;
 	GLuint quadBuffers[2];

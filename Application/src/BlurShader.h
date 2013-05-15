@@ -3,16 +3,14 @@
 class BlurShader : public Shader
 {
 public:
-  virtual void initUniforms();
+	virtual void initUniforms()
+	{
+	  inputTex = glGetUniformLocation(id, "inputTex");
+	  discontinuityTex = glGetUniformLocation(id, "discontinuityTex");
+	  window = glGetUniformLocation(id, "window");
+	}
 
-  GLint composedTex;
-  GLint discontinuityTex;
-  GLint winDim;
+	GLint inputTex;
+	GLint discontinuityTex;
+	GLint window;
 };
-
-void BlurShader::initUniforms()
-{
-  composedTex = glGetUniformLocation(id, "composedTex");
-  discontinuityTex = glGetUniformLocation(id, "discontinuityTex");
-  winDim = glGetUniformLocation(id, "winDim");
-}

@@ -3,7 +3,14 @@
 class DiscontinuityShader : public Shader
 {
 public:
-  virtual void initUniforms();
+  virtual void initUniforms()
+  {
+    normalTex = glGetUniformLocation(id, "normalTex");
+    depthTex = glGetUniformLocation(id, "depthTex");
+    distThresh = glGetUniformLocation(id, "distThresh");
+    normThresh = glGetUniformLocation(id, "normThresh");
+    window = glGetUniformLocation(id, "window");
+  }
 
   GLint normalTex;
   GLint depthTex;
@@ -11,12 +18,3 @@ public:
   GLint normThresh;
   GLint window;
 };
-
-void DiscontinuityShader::initUniforms()
-{
-  normalTex = glGetUniformLocation(id, "normalTex");
-  depthTex = glGetUniformLocation(id, "WSCTex");
-  distThresh = glGetUniformLocation(id, "distThresh");
-  normThresh = glGetUniformLocation(id, "normThresh");
-  window = glGetUniformLocation(id, "window");
-}
