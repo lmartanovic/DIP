@@ -1,3 +1,6 @@
 * blur attributes
 * free roaming camera
 * light cone
+* more lights
+* change kernel size
+* textures in /data/textures/ and add path

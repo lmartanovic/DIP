@@ -79,9 +79,10 @@ bool Model::fromScene(const aiScene* scene, const std::string & filename)
 		//get material info
 		struct aiMaterial *mtl = scene->mMaterials[mesh->mMaterialIndex];
 		aiString texPath;
+		std::string file = "./Application/data/";
 		if(mtl->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS)
 		{
-			meshInfos[i].texture = textureMap[texPath.data];
+			meshInfos[i].texture = textureMap[file+texPath.data];
 		}
 		initMesh(mesh, positions, normals, texCoords, indices);
 	}
@@ -414,6 +415,7 @@ float Model::dot(Vector3f & a, Vector3f & b)
 //load textures based on model scene
 void Model::loadTextures(const aiScene* scene)
 {
+	std::string fPath = "./Application/data/";
 	ILboolean success;
 	//init devIL
 	ilInit();
@@ -426,7 +428,7 @@ void Model::loadTextures(const aiScene* scene)
 															 texIndex, &path);
 		while(texFound == AI_SUCCESS)
 		{
-			textureMap[path.data] = 0;
+			textureMap[fPath+path.data] = 0;
 			texIndex++;
 			texFound = scene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE,
 													    texIndex, &path);

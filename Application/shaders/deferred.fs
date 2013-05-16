@@ -147,7 +147,7 @@ void main()
 		  //sample VPL color
 		  VPLcol = texture2D(rsmColorTex, mapCoord);
 		  //add indirect lighting contribution
-		  indirColor += VPLcol*color*(1.0/vplSqrt)*0.5;//*color*cosTheta*0.3;
+		  indirColor += VPLcol*(1.0/vplSqrt)*0.5;//*color
 		}
 	}
 	//final composition
