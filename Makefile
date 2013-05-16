@@ -1,6 +1,6 @@
 CC=g++
 CFLAGS=-Wall -O2
-LIBS=-lassimp -lGLEW -lsfml-window -lsfml-system -lsfml-graphics -lm
+LIBS=-lassimp -lGLEW -lsfml-window -lsfml-system -lsfml-graphics -lm -lIL
 BIN=DIP
 SRC=./Application/src
 

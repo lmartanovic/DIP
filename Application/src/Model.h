@@ -7,6 +7,8 @@
 #include <Assimp/Importer.hpp>
 #include <Assimp/postprocess.h>
 #include <Assimp/scene.h>
+//devIL
+#include <IL/il.h>
 //OpenGL
 #include <GL/glew.h>
 #include <SFML/OpenGL.hpp>
