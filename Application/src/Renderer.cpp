@@ -625,6 +625,7 @@ void Renderer::draw()
 		setUniform(renderShader.proj, light.getProjectionMatrix());
 		setUniform(renderShader.world, model.getWorldMatrix());
 		setUniform(renderShader.normalMat, NormalMatrix);
+		//TODO - set difuse texture
 		model.draw();
 		//---------------------------------------------------------------------------
 		//ISM creation
@@ -718,6 +719,10 @@ void Renderer::draw()
 		setUniform(renderShader.proj, camera.getProjectionMatrix());
 		setUniform(renderShader.world, model.getWorldMatrix());
 		setUniform(renderShader.normalMat, NormalMatrix);
+		//TODO set diffuse texture
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, ISMTextureLevel1);
+		setUniform(renderShader.diffuseTex, 0);
 		model.draw();
 		//-------------------------------------------------------------------------------
 		//Create Discontinuity Buffer

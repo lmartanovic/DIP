@@ -12,13 +12,14 @@ public:
 		view = glGetUniformLocation(id, "View");
 		proj = glGetUniformLocation(id, "Proj");
 		normalMat = glGetUniformLocation(id, "NormalMat");
+		diffuseTex = glGetUniformLocation(id, "diffuseTex");
 	};
 
 	GLint world;
 	GLint view;
 	GLint proj;
-	GLint cameraPos;
 	GLint normalMat;
+	GLint diffuseTex;
 };
 
 #endif

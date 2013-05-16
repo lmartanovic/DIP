@@ -15,10 +15,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#define NUM_BUFFERS 3
+#define NUM_BUFFERS 4
 #define EBO 0
 #define VBO_POS 1
 #define VBO_NORM 2
+#define VBO_TC 3
 
 #define NUM_VPLS 64
 #define VPL_SQRT 8
@@ -29,6 +30,12 @@ struct Vector3f
 	float x;
 	float y;
 	float z;
+};
+
+struct Vector2f
+{
+	float x;
+	float y;
 };
 
 struct MeshInfo
@@ -78,6 +85,7 @@ private:
 							std::vector<unsigned int> & indices);
 	void initMesh(const aiMesh* mesh, std::vector<Vector3f> & positions,
 				  std::vector<Vector3f> & normals,
+				  std::vector<Vector2f> & texCoords,
 				  std::vector<unsigned int> & indices);
 	void setCenter(std::vector<Vector3f>& positions);
 	void samplePoint(std::vector<Vector3f> & positions,

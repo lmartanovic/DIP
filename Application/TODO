@@ -1,2 +1,4 @@
 * blur attributes
 * load textures and use materials for drawing from camera POV
+	- model info - texture index
+	- when drawing model set uniforms accordingly

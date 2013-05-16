@@ -46,6 +46,7 @@ bool Model::fromScene(const aiScene* scene, const std::string & filename)
 	//resize meshInfos
 	std::vector<Vector3f> positions;
 	std::vector<Vector3f> normals;
+	std::vector<Vector2f> texCoords;
 	std::vector<unsigned int> indices;
 
 	unsigned int numVertices = 0;
@@ -67,13 +68,14 @@ bool Model::fromScene(const aiScene* scene, const std::string & filename)
 	//resize vectors
 	positions.reserve(numVertices);
 	normals.reserve(numVertices);
+	texCoords.reserve(numVertices);
 	indices.reserve(numIndices);
 
 	//fill the vectors with mesh data
 	for(unsigned int i = 0; i < meshInfos.size(); i++)
 	{
 		const aiMesh* mesh = scene->mMeshes[i];
-		initMesh(mesh, positions, normals, indices);
+		initMesh(mesh, positions, normals, texCoords, indices);
 	}
 
 	//generate point cloud from complete model/scene
@@ -91,8 +93,14 @@ bool Model::fromScene(const aiScene* scene, const std::string & filename)
 	glBindBuffer(GL_ARRAY_BUFFER, buffers[VBO_NORM]);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(normals[0])*normals.size(),
 				 &normals[0], GL_STATIC_DRAW);
-	glEnableVertexAttribArray(1);	//enable position
+	glEnableVertexAttribArray(1);	//enable normal
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	//texCoords
+	glBindBuffer(GL_ARRAY_BUFFER, buffers[VBO_TC]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(texCoords[0])*texCoords.size(),
+				 &texCoords[0], GL_STATIC_DRAW);
+	glEnableVertexAttribArray(2);	//enable normal
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	//indices
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[EBO]);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices[0])*indices.size(),
@@ -104,14 +112,18 @@ bool Model::fromScene(const aiScene* scene, const std::string & filename)
 //fill the data from meshes
 void Model::initMesh(const aiMesh* mesh, std::vector<Vector3f> & positions,
 				     std::vector<Vector3f> & normals,
+				     std::vector<Vector2f> & texCoords,
 				     std::vector<unsigned int> & indices)
 {
+	const aiVector3D Zero3D(0.0f, 0.0f, 0.0f);
 	Vector3f v;
+	Vector2f t;
 	//vertices
 	for(unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{
 		const aiVector3D* pos      = &(mesh->mVertices[i]);
         const aiVector3D* normal   = &(mesh->mNormals[i]);
+        const aiVector3D* texCoord = mesh->HasTextureCoords(0) ? &(mesh->mTextureCoords[0][i]) : &Zero3D;
         v.x = pos->x;
         v.y = pos->y;
         v.z = pos->z;
@@ -120,6 +132,9 @@ void Model::initMesh(const aiMesh* mesh, std::vector<Vector3f> & positions,
         v.y = normal->y;
         v.z = normal->z;
         normals.push_back(v);
+        t.x = texCoord->x;
+        t.y = texCoord->y;
+        texCoords.push_back(t);
 	}
 	//indices
 	for(unsigned int i = 0; i < mesh->mNumFaces; i++)
