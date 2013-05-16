@@ -28,6 +28,7 @@ bool Model::import(const std::string & filename)
 											 aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs);
 	if(scene)	//on success
 	{
+		loadTextures(scene);
 		ret = fromScene(scene, filename);
 	}else{
 		std::cerr << "Error parsing input file - " << filename << std::endl;
@@ -75,6 +76,13 @@ bool Model::fromScene(const aiScene* scene, const std::string & filename)
 	for(unsigned int i = 0; i < meshInfos.size(); i++)
 	{
 		const aiMesh* mesh = scene->mMeshes[i];
+		//get material info
+		struct aiMaterial *mtl = scene->mMaterials[mesh->mMaterialIndex];
+		aiString texPath;
+		if(mtl->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS)
+		{
+			meshInfos[i].texture = textureMap[texPath.data];
+		}
 		initMesh(mesh, positions, normals, texCoords, indices);
 	}
 
@@ -191,6 +199,10 @@ void Model::draw()
 	//draw meshes
 	for(unsigned int i = 0; i < meshInfos.size(); i++)
 	{
+		//bind diffuse texture
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, meshInfos[i].texture);
+		//std::cout << "texture - " << meshInfos[i].texture << std::endl;
 		glDrawElementsBaseVertex(GL_TRIANGLES, meshInfos[i].numIndices,
 								 GL_UNSIGNED_INT,
 								 (void*)(sizeof(unsigned int) * meshInfos[i].baseIndex),
@@ -257,7 +269,7 @@ void Model::generatePointCloud(std::vector<Vector3f> & positions,
 			if(j == triangles.end()) triangles.push_back(t);
 			parsed+=3;
 		}//for indices		
-		std::cout << (float)parsed*100/indices.size() << "%" << std::endl;
+		//std::cout << (float)parsed*100/indices.size() << "%" << std::endl;
 	}//for meshInfos
 	//divide the triangles into groups based on their area
 	float maxGroupArea = totalArea/15;
@@ -397,4 +409,66 @@ void Model::samplePoint(std::vector<Vector3f> & positions,
 float Model::dot(Vector3f & a, Vector3f & b)
 {
 	return (a.x*b.x + a.y*b.y + a.z*b.z);
+}
+
+//load textures based on model scene
+void Model::loadTextures(const aiScene* scene)
+{
+	ILboolean success;
+	//init devIL
+	ilInit();
+	//find materials contained in scene
+	for(unsigned int i = 0; i < scene->mNumMaterials; i++)
+	{
+		int texIndex = 0;
+		aiString path;
+		aiReturn texFound = scene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE,
+															 texIndex, &path);
+		while(texFound == AI_SUCCESS)
+		{
+			textureMap[path.data] = 0;
+			texIndex++;
+			texFound = scene->mMaterials[i]->GetTexture(aiTextureType_DIFFUSE,
+													    texIndex, &path);
+		}
+	}
+
+	//get number of found textures
+	int numTextures = textureMap.size();
+	ILuint* imageIds = new ILuint[numTextures];
+	ilGenImages(numTextures, imageIds);
+	GLuint* textureIds = new GLuint[numTextures];
+	glGenTextures(numTextures, textureIds);
+
+	//fill the map
+	std::map<std::string, GLuint>::iterator it;
+	unsigned int i = 0;
+	for(it = textureMap.begin(); it != textureMap.end(); it++, i++)
+	{
+		std::string fileName = (*it).first;
+		(*it).second = textureIds[i];
+
+		ilBindImage(imageIds[i]);
+		ilEnable(IL_ORIGIN_SET);
+		ilOriginFunc(IL_ORIGIN_LOWER_LEFT);
+		success = ilLoadImage((ILstring)fileName.c_str());
+
+		if(success) 
+		{
+			ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE); 
+
+			/* Create and load textures to OpenGL */
+			glBindTexture(GL_TEXTURE_2D, textureIds[i]); 
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, ilGetInteger(IL_IMAGE_WIDTH),
+				ilGetInteger(IL_IMAGE_HEIGHT), 0, GL_RGBA, GL_UNSIGNED_BYTE,
+				ilGetData()); 
+		}else printf("Couldn't load Image: %s\n", fileName.c_str());
+	}
+
+	ilDeleteImages(numTextures, imageIds);
+
+	delete[] imageIds;
+	delete[] textureIds;
 }

@@ -51,7 +51,7 @@ void main()
   vec4 Position;
   //near and far planes of VPL
   float near = 0.01;
-  float far = 150;
+  float far = 20;
   //compute light view matrix
   mat4 lightView = computeView(VPLpos.xyz, VPLnormal.xyz);
   //transform the point int light view

@@ -1,8 +1,10 @@
 #include "Camera.h"
 #include <iostream>
 Camera::Camera()
-: origin(glm::vec3(16.0, -11.0, 0.0)),
-  target(glm::vec3(-30.0, -20.0, 0.0)),
+: //origin(glm::vec3(16.0, -11.0, 0.0)),
+  //target(glm::vec3(-30.0, -20.0, 0.0)),
+  origin(glm::vec3(-19.0, 2.0, 0.0)),
+  target(glm::vec3(0.0, -10.0, 0.0)),
   moved(true),
   fov(60.0),
   winWidth(800.0),

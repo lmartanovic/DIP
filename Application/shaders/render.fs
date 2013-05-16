@@ -14,5 +14,6 @@ void main()
 {
 	wscPosition = Position;
 	normals = normalize(Normal);
-	diffuseColor = texture2D(diffuseTex, TexCoord);//vec4(1.0, 0.0, 0.0, 1.0);
+	diffuseColor = texture2D(diffuseTex, TexCoord);
+	if(diffuseColor == vec4(0.0)) diffuseColor = vec4(1.0, 0.2, 0.0, 1.0);
 }

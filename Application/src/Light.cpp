@@ -3,8 +3,8 @@
 Light::Light()
 : moved(true),
   fov(60.0),
-  nearPlane(0.75f),
-  farPlane(400.0f),
+  nearPlane(1.0f),
+  farPlane(100.0f),
   origin(glm::vec3(-19.0, 2.0, 0.0)),
   target(glm::vec3(0.0, -10.0, 0.0)),
   color(glm::vec4(1.0, 1.0, 1.0, 1.0))

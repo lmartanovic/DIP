@@ -111,7 +111,7 @@ void main()
     int IsmS = 0;
     mat4 lightView;
     float near = 0.01;
-    float far = 150;
+    float far = 20;
 
     vec4 indirColor = vec4(0.0);
     for(int i = 0; i < vplSqrt; i++)

@@ -2,6 +2,7 @@
 #define MODEL_H
 //std
 #include <iostream>
+#include <map>
 #include <vector>
 //assimp
 #include <Assimp/Importer.hpp>
@@ -45,6 +46,7 @@ struct MeshInfo
 	unsigned int numIndices;
 	unsigned int baseIndex;
 	unsigned int baseVertex;
+	unsigned int texture;
 };
 
 struct PointVertex
@@ -92,6 +94,7 @@ private:
 	void setCenter(std::vector<Vector3f>& positions);
 	void samplePoint(std::vector<Vector3f> & positions,
 					 Triangle & t, PointVertex & p);
+	void loadTextures(const aiScene* scene);
 	static float computeArea(Vector3f & A, Vector3f & B, Vector3f & C);
 	static float dot(Vector3f & a, Vector3f & b);
 	//geometry
@@ -103,6 +106,7 @@ private:
 	std::vector<Triangle> triangles;
 	//common properties
 	std::vector<MeshInfo> meshInfos;
+	std::map<std::string, GLuint> textureMap;
 	glm::mat4 worldMatrix;
 	glm::vec3 center;
 };
