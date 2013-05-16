@@ -66,6 +66,7 @@ private:
 	void setQuadTexCoord(int mipMapLevel);
 
 	bool running;
+	int mode;
 	int winHeight;
 	int winWidth;
 	sf::RenderWindow window;
@@ -99,7 +100,5 @@ private:
 	//fullscreen quad rendering
 	GLuint quadVAO;
 	GLuint quadBuffers[2];
-	//animation
-	float ry;
 };
 #endif

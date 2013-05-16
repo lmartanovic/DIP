@@ -1,5 +1,2 @@
 * blur attributes
-* indirect deferred illumination
-	- new uniforms in deferred shader
-	- projection in deferred shader
 * load textures and use materials for drawing from camera POV

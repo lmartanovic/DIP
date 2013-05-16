@@ -206,8 +206,8 @@ void Model::generatePointCloud(std::vector<Vector3f> & positions,
 	Vector3f A,B,C;	//triangle vertices
 	Triangle t;
 	float totalArea = 0.0;
+	unsigned int parsed = 0;
 	//create triangle structures to be sampled
-	std::cout << "assembling triangles..." << std::endl;
 	for(unsigned int k = 0; k < meshInfos.size(); k++)
 	{
 		t.meshIndex = k;
@@ -240,7 +240,9 @@ void Model::generatePointCloud(std::vector<Vector3f> & positions,
 				}
 			}
 			if(j == triangles.end()) triangles.push_back(t);
-		}//for indices
+			parsed+=3;
+		}//for indices		
+		std::cout << (float)parsed*100/indices.size() << "%" << std::endl;
 	}//for meshInfos
 	//divide the triangles into groups based on their area
 	float maxGroupArea = totalArea/15;
@@ -248,7 +250,7 @@ void Model::generatePointCloud(std::vector<Vector3f> & positions,
 	float areaAccumulator = 0.0;
 	unsigned int baseIndex = 0;
 	//init - first group begins at index 0 (first triangle)
-	std::cout << "dividing groups..." << std::endl;
+	std::cout << "\nDividing groups..." << std::endl;
 	groups.push_back(0);
 	for(unsigned int i = 0; i < triangles.size(); i++)
 	{

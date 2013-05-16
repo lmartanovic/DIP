@@ -4,21 +4,26 @@
 
 Renderer::Renderer()
 : running(true),
+  mode(2),
   winHeight(WIN_HEIGHT),
-  winWidth(WIN_WIDTH),
-  ry(0.0f)
+  winWidth(WIN_WIDTH)
 {}
 
 void Renderer::init(char* modelFile)
 {
+	std::cout << "Initialising context..." << std::endl;
 	initSFML();
 	initOpenGL();
 	initCamera();
 	initLight();
+	std::cout << "Creating shaders..." << std::endl;
 	initShaders();
+	std::cout << "Loading models..." << std::endl;
 	initGeometry(modelFile);
 	initQuad();
+	std::cout << "Creating FBOs..." << std::endl;
 	initFramebuffers();
+	std::cout << "Creating Halton texture..." << std::endl;
 	initHalton();
 	//more inits
 }
@@ -432,7 +437,6 @@ void Renderer::initFramebuffers()
 //import and convert geometry
 void Renderer::initGeometry(char* modelFile)
 {
-	std::cout << "loading models..." << std::endl;
 	model.import(modelFile);
 	//model.scale(15.0);
 	//model.moveBy(model.getCenter());
@@ -600,13 +604,13 @@ void Renderer::initShaders()
 //Rendering
 void Renderer::draw()
 {
-	//ry = 0.05f;
-	//model.rotate(ry, glm::vec3(0.0,1.0,0.0));
 	//compute normal matrix for light
 	glm::mat3 NormalMatrix = glm::transpose(glm::inverse(glm::mat3(light.getViewMatrix()*model.getWorldMatrix())));
 	//set up window vector for discontinuity, split and gather
 	glm::vec2 window = glm::vec2((float)winWidth, (float)winHeight);
 	glm::vec2 shadowViewport = glm::vec2((float)SHADOW_WIDTH, (float)SHADOW_HEIGHT);
+	glm::vec2 ismViewport = glm::vec2(2*(float)VPL_SQRT*ISM_TILE_EDGE/3,
+									  (float)VPL_SQRT*ISM_TILE_EDGE);
 
 	if(light.hasMoved())
 	{
@@ -768,15 +772,36 @@ void Renderer::draw()
 		glBindTexture(GL_TEXTURE_2D, splitColorTex);
 		glActiveTexture(GL_TEXTURE3);
 		glBindTexture(GL_TEXTURE_2D, rsmDepthTex);
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, ISMTextureLevel1);
+		glActiveTexture(GL_TEXTURE5);
+		glBindTexture(GL_TEXTURE_2D, rsmWSCTex);
+		glActiveTexture(GL_TEXTURE6);
+		glBindTexture(GL_TEXTURE_2D, rsmNormalTex);
+		glActiveTexture(GL_TEXTURE7);
+		glBindTexture(GL_TEXTURE_2D, rsmColorTex);
+		glActiveTexture(GL_TEXTURE8);
+		glBindTexture(GL_TEXTURE_2D, haltonTex);
 		deferredShader.use();
 		setUniform(deferredShader.wscTex, 0);
 		setUniform(deferredShader.normalTex, 1);
 		setUniform(deferredShader.colorTex, 2);
 		setUniform(deferredShader.shadowTex, 3);
+		setUniform(deferredShader.ismTex, 4);
+		setUniform(deferredShader.rsmWSCTex, 5);
+		setUniform(deferredShader.rsmNormalTex, 6);
+		setUniform(deferredShader.rsmColorTex, 7);
+		setUniform(deferredShader.haltonTex, 8);
+		setUniform(deferredShader.ismViewport, ismViewport);
+		setUniform(deferredShader.vplSqrt, (int)VPL_SQRT);
 		setUniform(deferredShader.view, camera.getViewMatrix());
 		setUniform(deferredShader.biasDVP, DVP);
 		setUniform(deferredShader.cameraPos, camera.getOrigin());
 		setUniform(deferredShader.lightPos, light.getOrigin());
+		setUniform(deferredShader.window, window);
+		setUniform(deferredShader.blocksX, GBUF_BLOCKS_X);
+		setUniform(deferredShader.blocksY, GBUF_BLOCKS_Y);
+		setUniform(deferredShader.mode, mode);
 		drawFullscreenQuad();
 		//-------------------------------------------------------------------------------
 		//G-BUFFER GATHERING
@@ -832,7 +857,7 @@ void Renderer::draw()
 	model.drawPointCloud();*/
 	quadShader.use();
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, ISMTextureLevel1);
+	glBindTexture(GL_TEXTURE_2D, renderColorTex);
 	setUniform(quadShader.tex, 0);
 	//render quad
 	drawFullscreenQuad();
@@ -906,6 +931,15 @@ void Renderer::handleKeyPressed(sf::Event & event)
 	case sf::Keyboard::E:
 		oc.y -= 1.0f;
 		camera.move();
+		break;
+	case sf::Keyboard::U:
+		mode = 0;
+		break;
+	case sf::Keyboard::I:
+		mode = 1;
+		break;
+	case sf::Keyboard::O:
+		mode = 2;
 		break;
 	default:
 		break;
