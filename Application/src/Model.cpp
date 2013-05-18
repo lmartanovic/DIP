@@ -1,17 +1,45 @@
+/******************************************************************************
+* DIP - Real-Time Illumination of a Scene - Model.cpp                         *
+*******************************************************************************
+* Contents                                                                    *
+* --------                                                                    *
+* - Model loading and rendering implementation.                               *
+*                                                                             *
+*******************************************************************************
+* Disclaimer                                                                  *
+* ----------                                                                  *
+* - Some parts of this module using Assimp and DevIL are based on             *
+*	http://ogldev.atspace.co.uk and http://www.lighthouse3d.com tutorials.    *
+*                                                                             *
+*******************************************************************************
+* Author                                                                      *
+* ------                                                                      *
+* Lukáš Martanovič (xmarta00@stud.fit.vutbr.cz)                               *
+*                                                                             *
+* 18.05.2013                                                                  *
+*                                                                             *
+*******************************************************************************
+* This software is not copyrighted.                                           *
+*                                                                             *
+* This source code is offered for use in the public domain.                   *
+* You may use, modify or distribute it freely.                                *
+*                                                                             *
+******************************************************************************/
+
 #include "Model.h"
 
+//! Default constructor
 Model::Model()
 : mainVAO(0),
   worldMatrix(glm::mat4(1.0f)),
   center(glm::vec3(0.0))
 {}
-
+//! Default destructor
 Model::~Model()
 {
 	//CLEANUP
 }
-
-//import model from file
+//! Import model/scene from file
 bool Model::import(const std::string & filename)
 {
 	//create and bind VAO
@@ -41,7 +69,7 @@ bool Model::import(const std::string & filename)
 }
 
 
-//convert assimp scene to VAO
+//! Load meshes from assimp scene object
 bool Model::fromScene(const aiScene* scene, const std::string & filename)
 {
 	//resize meshInfos
@@ -118,7 +146,7 @@ bool Model::fromScene(const aiScene* scene, const std::string & filename)
 	return true;
 }
 
-//fill the data from meshes
+//! Load vector attributes for each individual mesh in a scene
 void Model::initMesh(const aiMesh* mesh, std::vector<Vector3f> & positions,
 				     std::vector<Vector3f> & normals,
 				     std::vector<Vector2f> & texCoords,
@@ -154,7 +182,7 @@ void Model::initMesh(const aiMesh* mesh, std::vector<Vector3f> & positions,
 		indices.push_back(face.mIndices[2]);
 	}
 }
-
+//! Get geometrical center
 glm::vec3& Model::getCenter()
 {
 	glm::vec3 c;
@@ -165,7 +193,7 @@ glm::vec3& Model::getCenter()
 	center.z = cc.z;
 	return center;
 }
-
+//! Set models geometrical center based on vertex positions
 void Model::setCenter(std::vector<Vector3f>& positions)
 {
 	float minX = 1e30f;
@@ -191,8 +219,7 @@ void Model::setCenter(std::vector<Vector3f>& positions)
 	center.y = minY + (maxY - minY)/2;
 	center.z = minZ + (maxZ - minZ)/2;
 }
-
-//draw the whole model
+//! Draw the model
 void Model::draw()
 {
 	//bind main VAO
@@ -212,8 +239,7 @@ void Model::draw()
 	//unbind
 	glBindVertexArray(0);
 }
-
-//draw point cloud
+//! Draw corresponding point cloud
 void Model::drawPointCloud()
 {
 	//bind point cloud VAO
@@ -223,8 +249,7 @@ void Model::drawPointCloud()
 	//unbind VAO
 	glBindVertexArray(0);
 }
-
-//generate point cloud from scene geometry
+//! Generate point cloud from loaded meshes
 void Model::generatePointCloud(std::vector<Vector3f> & positions,
 							   std::vector<unsigned int> & indices)
 {
@@ -338,8 +363,7 @@ void Model::generatePointCloud(std::vector<Vector3f> & positions,
 	//unbind and bind the main VAO back
 	glBindVertexArray(mainVAO);
 }
-
-//compute triangle area
+//! Compute triangle area based on vertex positions
 float Model::computeArea(Vector3f & A, Vector3f & B, Vector3f & C)
 {
 	float a = sqrt(pow(A.x - B.x, 2) +
@@ -354,8 +378,7 @@ float Model::computeArea(Vector3f & A, Vector3f & B, Vector3f & C)
 	float p = (a+b+c)/2;
 	return sqrt(p*(p-a)*(p-b)*(p-c));
 }
-
-//sample point
+//! Sample random point from a triangle
 void Model::samplePoint(std::vector<Vector3f> & positions,
 						Triangle & t, PointVertex & p)
 {
@@ -406,13 +429,12 @@ void Model::samplePoint(std::vector<Vector3f> & positions,
 	p.barycentric[1] = (d00 * d21 - d01 * d20) / denom;
 	p.barycentric[2] = 1.0f - p.barycentric[0] - p.barycentric[1];
 }
-
+//! Compute vector dot product
 float Model::dot(Vector3f & a, Vector3f & b)
 {
 	return (a.x*b.x + a.y*b.y + a.z*b.z);
 }
-
-//load textures based on model scene
+//! Load textures corresponding with the model
 void Model::loadTextures(const aiScene* scene)
 {
 	std::string fPath = "./Application/data/";
@@ -459,7 +481,7 @@ void Model::loadTextures(const aiScene* scene)
 		{
 			ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE); 
 
-			/* Create and load textures to OpenGL */
+			//Create and load textures to OpenGL
 			glBindTexture(GL_TEXTURE_2D, textureIds[i]); 
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); 
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

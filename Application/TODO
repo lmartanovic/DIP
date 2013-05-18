@@ -1,6 +1,8 @@
-* blur attributes
-* free roaming camera
 * light cone
+	- lightShader (RSM shader)
+	- SM dimension in ISM, deferred and check if lit while sampling VPL
+* blur attributes
+	- change kernel size
 * more lights
-* change kernel size
-* textures in /data/textures/ and add path
+
+* deltaTime - na rychlost pohybu kamery aj na meranie fps

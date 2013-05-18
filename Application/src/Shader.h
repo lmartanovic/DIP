@@ -1,3 +1,25 @@
+/******************************************************************************
+* DIP - Real-Time Illumination of a Scene - Shader.h                          *
+*******************************************************************************
+* Contents                                                                    *
+* --------                                                                    *
+* - Shader - Simple OpenGL shader wrapper.                                    *
+*                                                                             *
+*******************************************************************************
+* Author                                                                      *
+* ------                                                                      *
+* Lukáš Martanovič (xmarta00@stud.fit.vutbr.cz)                               *
+*                                                                             *
+* 18.05.2013                                                                  *
+*                                                                             *
+*******************************************************************************
+* This software is not copyrighted.                                           *
+*                                                                             *
+* This source code is offered for use in the public domain.                   *
+* You may use, modify or distribute it freely.                                *
+*                                                                             *
+******************************************************************************/
+
 /*! \file Shader.h */
 #ifndef SHADER_H
 #define SHADER_H
@@ -23,7 +45,7 @@ typedef enum ShaderType
 
 /*! 
  * \class Shader
- * \brief Shader Program (effect) class.
+ * \brief Shader Program (effect) wrapper class.
 */
 class Shader
 {
@@ -57,13 +79,13 @@ protected:
 	\param uni Uniform object identifier.
 	\param value Value to be assigned.
 
-	mat4, mat3, vec3, float and int implemented so far.
+	mat4, mat3, vec3, vec2, float and int implemented so far.
 */
 void setUniform(GLint uni, glm::mat4 & value);
 void setUniform(GLint uni, glm::mat3 & value);
 void setUniform(GLint uni, glm::vec3 & value);
 void setUniform(GLint uni, glm::vec2 & value);
-void setUniform(GLint uni, GLint value);
 void setUniform(GLint uni, GLfloat value);
+void setUniform(GLint uni, GLint value);
 
 #endif

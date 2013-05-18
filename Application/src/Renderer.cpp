@@ -1,14 +1,37 @@
+/******************************************************************************
+* DIP - Real-Time Illumination of a Scene - Renderer.cpp                      *
+*******************************************************************************
+* Contents                                                                    *
+* --------                                                                    *
+* - Main rendering "engine" implementation.                                   *
+*                                                                             *
+*******************************************************************************
+* Author                                                                      *
+* ------                                                                      *
+* Lukáš Martanovič (xmarta00@stud.fit.vutbr.cz)                               *
+*                                                                             *
+* 18.05.2013                                                                  *
+*                                                                             *
+*******************************************************************************
+* This software is not copyrighted.                                           *
+*                                                                             *
+* This source code is offered for use in the public domain.                   *
+* You may use, modify or distribute it freely.                                *
+*                                                                             *
+******************************************************************************/
+
 #include <iostream>
 #include "Renderer.h"
 #include "quad.h"
 
+//! Default constructor
 Renderer::Renderer()
 : running(true),
   mode(2),
   winHeight(WIN_HEIGHT),
   winWidth(WIN_WIDTH)
 {}
-
+//! Initialisation
 void Renderer::init(char* modelFile)
 {
 	std::cout << "Initialising context..." << std::endl;
@@ -30,6 +53,7 @@ void Renderer::init(char* modelFile)
 
 //----------------------------------------------------------------------------
 //MAIN LOOP
+//! Start the rendering loop
 void Renderer::run()
 {
 	while(running)
@@ -58,13 +82,17 @@ void Renderer::run()
 			case sf::Event::MouseWheelMoved:
 				handleMouseWheel(event);
 				break;
+			case sf::Event::MouseMoved:
+				camera.look(event.mouseMove.x, event.mouseMove.y);
+				break;
 				//unhandled
 			default:
 				break;
 			}
 		}//pollEvent
 
-		//TODO: kontrola ci treba kreslit
+		//reset mouse position to the center of the screem
+		sf::Mouse::setPosition(sf::Vector2i(winWidth/2,winHeight/2), window);
 		draw();
 		window.display();
 		camera.resetMoveFlag();
@@ -74,18 +102,17 @@ void Renderer::run()
 
 //----------------------------------------------------------------------------
 //Inits
-//camera creation and setup
+//! Create and initialise camera
 void Renderer::initCamera()
 {
 	camera.create();	//create default camera
 }
-//primary light source creation
+//! Create and initialise primary light source
 void Renderer::initLight()
 {
 	light.create();		//create default light
 }
-
-//init framebuffer objects
+//! Create and initialise offscreen rendering framebuffers
 void Renderer::initFramebuffers()
 {
 	glGenFramebuffers(NUM_FBOS, FBOs);
@@ -433,17 +460,12 @@ void Renderer::initFramebuffers()
 	//unbind
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-
-//import and convert geometry
+//! Load and initialise scene geometry
 void Renderer::initGeometry(char* modelFile)
 {
 	model.import(modelFile);
-	//model.scale(15.0);
-	//model.moveBy(model.getCenter());
-	//camera.setTarget(model.getCenter());
 }
-
-//code the halton sequence into RG texture
+//! Create texture encoding halton sequence
 void Renderer::initHalton()
 {
 	//bind halton FBO
@@ -460,8 +482,7 @@ void Renderer::initHalton()
 	//unbind FBO
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
-
-//GLEW and quad initialisation
+//! Create OpenGL rendering context
 void Renderer::initOpenGL()
 {
 	glewExperimental = GL_TRUE;
@@ -473,8 +494,7 @@ void Renderer::initOpenGL()
 	glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 	glCullFace(GL_BACK);
 }
-
-//init fullscreen quad for rendering
+//! Create and initialise screen-aligned quad model
 void Renderer::initQuad()
 {
 	//generate VAO
@@ -500,8 +520,7 @@ void Renderer::initQuad()
 	//unbind
 	glBindVertexArray(0);
 }
-
-//SFML initialisation
+//! Initialise rendering window and SFML functionality
 void Renderer::initSFML()
 {
 	sf::ContextSettings settings;
@@ -515,9 +534,9 @@ void Renderer::initSFML()
 				  "DIP",
 				  sf::Style::Default,
 				  settings);
+	window.setMouseCursorVisible(false);	//hide mouse cursor
 }
-
-//Shader init
+//! Create, load and compile shader programs
 void Renderer::initShaders()
 {
 	//sample
@@ -602,6 +621,7 @@ void Renderer::initShaders()
 
 //----------------------------------------------------------------------------
 //Rendering
+//! Draw the scene
 void Renderer::draw()
 {
 	//compute normal matrix for light
@@ -870,7 +890,7 @@ void Renderer::draw()
 	//render quad
 	drawFullscreenQuad();
 }
-
+//! Draw screen-aligned quad
 void Renderer::drawFullscreenQuad()
 {
 	glBindVertexArray(quadVAO);
@@ -881,7 +901,7 @@ void Renderer::drawFullscreenQuad()
 
 //----------------------------------------------------------------------------
 //IO event handling
-//Keyboard
+//! Handle keyboard input
 void Renderer::handleKeyPressed(sf::Event & event)
 {
 	glm::vec3& ol = light.getOrigin();
@@ -917,19 +937,19 @@ void Renderer::handleKeyPressed(sf::Event & event)
 		light.move();
 		break;
 	case sf::Keyboard::W:
-		oc.z -= 1.0f;
+		oc += camera.getDirection();//1.0f;
 		camera.move();
 		break;
 	case sf::Keyboard::S:
-		oc.z += 1.0f;
+		oc -= camera.getDirection();//1.0f;
 		camera.move();
 		break;
 	case sf::Keyboard::A:
-		oc.x -= 1.0f;
+		oc -= camera.getRight();//1.0f;
 		camera.move();
 		break;
 	case sf::Keyboard::D:
-		oc.x += 1.0f;
+		oc += camera.getRight();//1.0f;
 		camera.move();
 		break;
 	case sf::Keyboard::Q:
@@ -952,18 +972,14 @@ void Renderer::handleKeyPressed(sf::Event & event)
 	default:
 		break;
 	}
-
-	//std::cout << "light " << oc.x << "," << oc.y << "," << oc.z << std::endl;
 }
-
-//Mouse
+//! Handle mouse wheel movement
 void Renderer::handleMouseWheel(sf::Event & event)
 {
 	//TODO: change rotation based on mouse.wheel.delta
 }
-
-//-1 -> default
-void Renderer::setQuadTexCoord(int mipMapLevel)
+//! Set texture coordinates corresponding to quad vertices
+void Renderer::setQuadTexCoord(int mipMapLevel) //-1 -> default
 {
   switch(mipMapLevel)
   {

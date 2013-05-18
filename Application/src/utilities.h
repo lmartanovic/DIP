@@ -1,3 +1,26 @@
+/******************************************************************************
+* DIP - Real-Time Illumination of a Scene - utilities.h                       *
+*******************************************************************************
+* Contents                                                                    *
+* --------                                                                    *
+* - Text file loading.                                                        *
+* - OpenGL Error checking.                                                    *
+*                                                                             *
+*******************************************************************************
+* Author                                                                      *
+* ------                                                                      *
+* Lukáš Martanovič (xmarta00@stud.fit.vutbr.cz)                               *
+*                                                                             *
+* 18.05.2013                                                                  *
+*                                                                             *
+*******************************************************************************
+* This software is not copyrighted.                                           *
+*                                                                             *
+* This source code is offered for use in the public domain.                   *
+* You may use, modify or distribute it freely.                                *
+*                                                                             *
+******************************************************************************/
+
 /*! \file utilities.h */
 #ifndef UTILITIES_H
 #define UTILITIES_H

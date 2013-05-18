@@ -1,3 +1,25 @@
+/******************************************************************************
+* DIP - Real-Time Illumination of a Scene - Renderer.h                        *
+*******************************************************************************
+* Contents                                                                    *
+* --------                                                                    *
+* - Renderer - Main rendering "engine" class.                                 *
+*                                                                             *
+*******************************************************************************
+* Author                                                                      *
+* ------                                                                      *
+* Lukáš Martanovič (xmarta00@stud.fit.vutbr.cz)                               *
+*                                                                             *
+* 18.05.2013                                                                  *
+*                                                                             *
+*******************************************************************************
+* This software is not copyrighted.                                           *
+*                                                                             *
+* This source code is offered for use in the public domain.                   *
+* You may use, modify or distribute it freely.                                *
+*                                                                             *
+******************************************************************************/
+
 #ifndef RENDERER_H
 #define RENDERER_H
 
@@ -32,49 +54,90 @@
 #define ISM_TILE_EDGE 256	//pixels per ISM tile
 
 #define NUM_FBOS 10
-#define RENDER_FBO 0
-#define DEFERRED_FBO 1
-#define RSM_FBO 2
-#define HALTON_FBO 3
-#define SPLIT_FBO 4
-#define GATHER_FBO 5
-#define DISCONTINUITY_FBO 6
-#define XBLUR_FBO 7
-#define YBLUR_FBO 8
-#define ISM_FBO 9
 
+enum FBOType
+{
+	RENDER_FBO,
+	DEFERRED_FBO,
+	RSM_FBO,
+	HALTON_FBO,
+	SPLIT_FBO,
+	GATHER_FBO,
+	DISCONTINUITY_FBO,
+	XBLUR_FBO,
+	YBLUR_FBO,
+	ISM_FBO
+};
+
+/*!
+ * \class Renderer
+ * \brief Main rendering "engine"
+*/
 class Renderer
 {
 public:
+	//! Default constructor
 	Renderer();
+	//! Initialisation
+	/*!
+	  \param modelFile - file containing the model/scene
+	*/
 	void init(char* modelFile);
+	//! Start the rendering loop
 	void run();
 private:
+	//! Draw the scene
 	void draw();
+	//! Draw screen-aligned quad
 	void drawFullscreenQuad();
+	//! Handle keyboard input
+	/*!
+	  \param event - SFML event object
+	*/
 	void handleKeyPressed(sf::Event & event);
+	//! Handle mouse wheel movement
+	/*!
+	  \param event - SFML event object
+	*/
 	void handleMouseWheel(sf::Event & event);
+	//! Create and initialise camera
 	void initCamera();
+	//! Create and initialise offscreen rendering framebuffers
 	void initFramebuffers();
+	//! Load and initialise scene geometry
+	/*!
+	  \param modelFile - file containing the scene/model information
+	*/
 	void initGeometry(char* modelFile);
+	//! Create texture encoding halton sequence
 	void initHalton();
+	//! Create and initialise primary light source
 	void initLight();
+	//! Create OpenGL rendering context
 	void initOpenGL();
+	//! Create and initialise screen-aligned quad model
 	void initQuad();
+	//! Initialise rendering window and SFML functionality
 	void initSFML();
+	//! Create, load and compile shader programs
 	void initShaders();
+	//! Set texture coordinates corresponding to quad vertices
+	/*!
+	  \param mipMapLevel - level of pull-push algorithm
+	*/
 	void setQuadTexCoord(int mipMapLevel);
 
-	bool running;
-	int mode;
-	int winHeight;
-	int winWidth;
-	sf::RenderWindow window;
+	bool running;				/*!< Exit flag */
+	int mode;					/*!< Rendering mode (indirect/direct/combined) flag */
+	int winHeight;				/*!< Rendering winodw height */
+	int winWidth;				/*!< Rendering window width */
+	sf::RenderWindow window;	/*!< Rendering window */
 
-	Camera camera;
-	Light light;
-	Model model;
-	//TODO: nahradit zoznamov vsetkych shaderov
+	Camera camera;				/*! Camera */
+	Light light;				/*! Primary light source */
+	Model model;				/*! Scene geometry */
+	
+	//! Various shaders
 	BlurShader xBlurShader, yBlurShader;
 	DeferredShader deferredShader;
 	DiscontinuityShader discontinuityShader;
@@ -87,9 +150,9 @@ private:
 	PullShader pullShader;
 	PushShader pushShader;
 	RenderShader renderShader;
-	//FBO array
-	GLuint FBOs[NUM_FBOS];
-	//render textures
+
+	GLuint FBOs[NUM_FBOS];		/*!< Offscreen rendering framebuffer objects */
+	//! Offscreen rendering textures
 	GLuint renderDepthTex, renderWSCTex, renderNormalTex, renderColorTex;
 	GLuint deferredColTex;
 	GLuint rsmDepthTex, rsmWSCTex, rsmNormalTex, rsmColorTex;
@@ -98,7 +161,7 @@ private:
 	GLuint discontinuityDepthTex, discontinuityTex;
 	GLuint ISMTextureLevel0, ISMTextureLevel1;
 	//fullscreen quad rendering
-	GLuint quadVAO;
-	GLuint quadBuffers[2];
+	GLuint quadVAO;				/*!< Screen-aligned quad VAO */
+	GLuint quadBuffers[2];		/*!< Screen-aligned buffers (VBO, EBO) */
 };
 #endif
