@@ -124,7 +124,7 @@ void main()
 		VPLpos = texture2D(rsmWSCTex, mapCoord).rgb; //get position
 		VPLnorm = texture2D(rsmNormalTex, mapCoord).rgb; //get normal
 		//compute view matrix
-		lightView = computeView(VPLpos.xyz, VPLnorm.xyz);
+		lightView = computeView(VPLpos, VPLnorm);
 		//move fragment into light space
 		Position = lightView * wpos;
 		//compute projection
@@ -134,6 +134,8 @@ void main()
 		Position /= l;
 
 		ClipDepth = Position.z;
+		//disregard fragments "behind" the VPL
+		if(ClipDepth < 0) continue;
 
 		Position.x /= Position.z + 1.0;
 		Position.y /= Position.z + 1.0;
@@ -142,16 +144,16 @@ void main()
 
 		ISMdepth = texture2D(ismTex, ttcc).r;//get ISM value
 		//compare fragment depth in paraboloid space with ISM value
-		if(ISMdepth > Position.z)	//visible
+		if(ISMdepth + 0.05> Position.z)	//visible
 		{
 		  //sample VPL color
 		  VPLcol = texture2D(rsmColorTex, mapCoord);
 		  //add indirect lighting contribution
-		  indirColor += VPLcol*(1.0/vplSqrt)*0.5;//*color
+		  indirColor += VPLcol*color*(1.0/vplSqrt)*0.5;//*color
 		}
 	}
 	//final composition
   	if(mode == 0) fragColor = indirColor;
   	else if(mode == 1) fragColor = dirColor;
-  	else fragColor = indirColor + dirColor;
+  	else fragColor = indirColor*0.5 + dirColor;
 }

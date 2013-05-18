@@ -13,17 +13,17 @@ void main()
   float offset = 1.0/window.x; //1px offset
 
   float weights[4];
-  weights[0] = 0.15;
+  weights[0] = 0.24;
   weights[1] = 0.12;
   weights[2] = 0.09;
   weights[3] = 0.05;
 
   vec4 sum = vec4(0.0);
   float valid = 0.0;
-  float weight = 0.16;
+  float weight = 0.3;
 
   //get center
-  sum += texture2D(inputTex, TexCoord) * 0.16;
+  sum += texture2D(inputTex, TexCoord) * 0.3;
   //get its value in discontinuity buffer
   valid = texture2D(discontinuityTex, TexCoord).r;
 
@@ -31,7 +31,7 @@ void main()
   if(valid != 1.0)
   {
     //get values up
-    for(int i = 1; i <= 4; i++)
+    for(int i = 1; i <= 2; i++)
     {
       //find out if neighbor is on a discontinuity
       valid = texture2D(discontinuityTex, vec2(TexCoord.x, TexCoord.y - i*offset)).r;
@@ -45,7 +45,7 @@ void main()
     }
 
     //get values down and do the same
-    for(int i = 1; i <= 4; i++)
+    for(int i = 1; i <= 2; i++)
     {
       valid = texture2D(discontinuityTex, vec2(TexCoord.x, TexCoord.y + i*offset)).r;
       if(valid == 1.0)

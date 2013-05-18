@@ -46,6 +46,7 @@
 #include "PullShader.h"
 #include "PushShader.h"
 #include "RenderShader.h"
+#include "RSMShader.h"
 
 #define WIN_HEIGHT 600
 #define WIN_WIDTH 800
@@ -151,6 +152,7 @@ private:
 	PullShader pullShader;
 	PushShader pushShader;
 	RenderShader renderShader;
+	RSMShader rsmShader;
 
 	GLuint FBOs[NUM_FBOS];		/*!< Offscreen rendering framebuffer objects */
 	//! Offscreen rendering textures

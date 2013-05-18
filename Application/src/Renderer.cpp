@@ -539,12 +539,18 @@ void Renderer::initSFML()
 //! Create, load and compile shader programs
 void Renderer::initShaders()
 {
-	//sample
+	//Camera POV rendering
 	renderShader.create();
 	renderShader.addShader(VS, "Application/shaders/render.vs");
 	renderShader.addShader(FS, "Application/shaders/render.fs");
 	renderShader.link();
 	renderShader.initUniforms();
+	//Light POV rendering
+	rsmShader.create();
+	rsmShader.addShader(VS, "Application/shaders/render.vs");
+	rsmShader.addShader(FS, "Application/shaders/rsm.fs");
+	rsmShader.link();
+	rsmShader.initUniforms();
 	//simple quad rendering with single texture
 	quadShader.create();
 	quadShader.addShader(VS, "Application/shaders/quad.vs");
@@ -640,14 +646,15 @@ void Renderer::draw()
 		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[RSM_FBO]);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-		renderShader.use();
-		setUniform(renderShader.view, light.getViewMatrix());
-		setUniform(renderShader.proj, light.getProjectionMatrix());
-		setUniform(renderShader.world, model.getWorldMatrix());
-		setUniform(renderShader.normalMat, NormalMatrix);
+		rsmShader.use();
+		setUniform(rsmShader.view, light.getViewMatrix());
+		setUniform(rsmShader.proj, light.getProjectionMatrix());
+		setUniform(rsmShader.world, model.getWorldMatrix());
+		setUniform(rsmShader.normalMat, NormalMatrix);
+		setUniform(rsmShader.viewport, shadowViewport);
 		//activate diffuse texture unit and set uniform
 		glActiveTexture(GL_TEXTURE0);
-		setUniform(renderShader.diffuseTex, 0);
+		setUniform(rsmShader.diffuseTex, 0);
 		//texture bound by model
 		model.draw();
 		//---------------------------------------------------------------------------
@@ -759,8 +766,8 @@ void Renderer::draw()
 		discontinuityShader.use();
 		setUniform(discontinuityShader.depthTex, 0);
 		setUniform(discontinuityShader.normalTex, 1);
-		setUniform(discontinuityShader.distThresh, (float)0.25);
-	  	setUniform(discontinuityShader.normThresh, (float)0.5);
+		setUniform(discontinuityShader.distThresh, (float)0.5);	//0.25
+	  	setUniform(discontinuityShader.normThresh, (float)0.75); // 0.5
 		setUniform(discontinuityShader.window, window);
 		drawFullscreenQuad();
 		//-------------------------------------------------------------------------------
@@ -860,7 +867,7 @@ void Renderer::draw()
 		setUniform(xBlurShader.window, window);
 		drawFullscreenQuad();	//output in deferredColTex
 		//-------------------------------------------------------------------------------
-		//X-BLUR
+		//Y-BLUR
 		//-------------------------------------------------------------------------------
 		glBindFramebuffer(GL_FRAMEBUFFER, FBOs[YBLUR_FBO]);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

@@ -28,8 +28,8 @@ Light::Light()
   fov(60.0),
   nearPlane(1.0f),
   farPlane(100.0f),
-  origin(glm::vec3(-19.0, 2.0, 0.0)),
-  target(glm::vec3(0.0, -10.0, 0.0)),
+  origin(glm::vec3(-19.0, 2.0, 0.0)), // 4,-7,0
+  target(glm::vec3(1.0, -10.0, 0.0)),
   color(glm::vec4(1.0, 1.0, 1.0, 1.0))
  {}
 //! Default initialisation

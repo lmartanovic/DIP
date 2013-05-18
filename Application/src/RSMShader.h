@@ -20,26 +20,32 @@
 *                                                                             *
 ******************************************************************************/
 
-#include "Shader.h"
+#ifndef RSM_SHADER_H
+#define RSM_SHADER_H
 
+#include "Shader.h"
 
 //! Reflective Shadow Map creation shader
 class RSMShader : public Shader
 {
 public:
 	//! Uniform variable initialisation
-	virtual void initUniforms();
+	virtual void initUniforms()	
+	{
+		world = glGetUniformLocation(id, "World");
+		view = glGetUniformLocation(id, "View");
+		proj = glGetUniformLocation(id, "Proj");
+		normalMat = glGetUniformLocation(id, "NormalMat");
+		diffuseTex = glGetUniformLocation(id, "diffuseTex");
+		viewport = glGetUniformLocation(id, "viewport");
+	};
 
-	GLint depthMVPUni;
-	GLint depthNMUni;
-	GLint depthWorldUni;
-	GLint depthDiffMaterial;
+	GLint world;		/*!< Model world matrix */
+	GLint view;			/*!< Camera view matrix */
+	GLint proj;			/*!< Camera projection matrix */
+	GLint normalMat;	/*!< Normal matrix */
+	GLint diffuseTex;	/*!< Diffuse material texture */
+	GLint viewport;		/*!< Shadow Map dimensions */
 };
 
-void RSMShader::initUniforms()
-{
-	depthMVPUni = glGetUniformLocation(id, "depthMVP");
-	depthNMUni = glGetUniformLocation(id, "normalMatrix");
-	depthWorldUni = glGetUniformLocation(id, "worldMatrix");
-	depthDiffMaterial = glGetUniformLocation(id, "diffuseMaterialComponent");
-}
+#endif

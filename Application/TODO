@@ -1,6 +1,5 @@
 * light cone
-	- lightShader (RSM shader)
-	- SM dimension in ISM, deferred and check if lit while sampling VPL
+	- deferred SM dimensions and check if lit while sampling VPL
 * blur attributes
 	- change kernel size
 * more lights
