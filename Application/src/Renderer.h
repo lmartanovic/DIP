@@ -55,18 +55,19 @@
 
 #define NUM_FBOS 10
 
+//! Framebuffer object types
 enum FBOType
 {
-	RENDER_FBO,
-	DEFERRED_FBO,
-	RSM_FBO,
-	HALTON_FBO,
-	SPLIT_FBO,
-	GATHER_FBO,
-	DISCONTINUITY_FBO,
-	XBLUR_FBO,
-	YBLUR_FBO,
-	ISM_FBO
+	RENDER_FBO,			/*!< MRT rendering */
+	DEFERRED_FBO,		/*!< Deferred shading */
+	RSM_FBO,			/*!< Reflective shadow map */
+	HALTON_FBO,			/*!< Halton texturecreation */
+	SPLIT_FBO,			/*!< G-buffer splitting */
+	GATHER_FBO,			/*!< G-buffer gathering */
+	DISCONTINUITY_FBO,	/*!< Discontinuity buffer creation */
+	XBLUR_FBO,			/*!< X blur */
+	YBLUR_FBO,			/*!< Y blut */
+	ISM_FBO				/*!< ISM creation */
 };
 
 /*!
