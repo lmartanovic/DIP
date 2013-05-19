@@ -48,7 +48,7 @@
 
 #define NUM_VPLS 64
 #define VPL_SQRT 8
-#define POINTS_PER_VPL 16000
+#define POINTS_PER_VPL 4000
 
 //! 3D vector
 struct Vector3f

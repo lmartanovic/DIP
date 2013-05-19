@@ -12,11 +12,9 @@ void main()
 {
   float offset = 1.0/window.x; //1px offset
 
-  float weights[4];
+  float weights[2];
   weights[0] = 0.24;
   weights[1] = 0.12;
-  weights[2] = 0.09;
-  weights[3] = 0.05;
 
   vec4 sum = vec4(0.0);
   float valid = 0.0;

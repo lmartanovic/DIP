@@ -42,7 +42,7 @@ void main()
 
   float dividor = 1.0/float(vplSqrt);
   //look into halton  +0.5 for pixel precision
-  vec4 mapCoord = texture2D(halton, vec2((yoffset+0.5)*dividor, (xoffset+0.5)*dividor));
+  vec4 mapCoord = texture2D(halton, vec2((xoffset+0.5)*dividor, (yoffset+0.5)*dividor));
   //light position from wsctex on halton coords
   vec4 VPLpos = texture2D(wscTex, mapCoord.xy);
   //VPL normal

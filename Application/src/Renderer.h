@@ -50,8 +50,8 @@
 
 #define WIN_HEIGHT 600
 #define WIN_WIDTH 800
-#define GBUF_BLOCKS_X 5
-#define GBUF_BLOCKS_Y 5
+#define GBUF_BLOCKS_X 4
+#define GBUF_BLOCKS_Y 4
 #define ISM_TILE_EDGE 256	//pixels per ISM tile
 
 #define NUM_FBOS 10
@@ -128,6 +128,10 @@ private:
 	  \param mipMapLevel - level of pull-push algorithm
 	*/
 	void setQuadTexCoord(int mipMapLevel);
+	//! FPS counter
+	void countFPS();
+	//! Light animation
+	void animateLight();
 
 	bool running;				/*!< Exit flag */
 	int mode;					/*!< Rendering mode (indirect/direct/combined) flag */
@@ -166,5 +170,10 @@ private:
 	//fullscreen quad rendering
 	GLuint quadVAO;				/*!< Screen-aligned quad VAO */
 	GLuint quadBuffers[2];		/*!< Screen-aligned buffers (VBO, EBO) */
+
+	sf::Clock clock;			/*!< System clock for FPS counting */
+	unsigned int frameCounter;	/*!< Number of drawn frames */
+	int frameTime;				/*!< Elapsed time */
+	int lightDir;				/*!< Light direction */
 };
 #endif

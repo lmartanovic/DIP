@@ -29,7 +29,10 @@ Renderer::Renderer()
 : running(true),
   mode(2),
   winHeight(WIN_HEIGHT),
-  winWidth(WIN_WIDTH)
+  winWidth(WIN_WIDTH),
+  frameCounter(0),
+  frameTime(0),
+  lightDir(1)
 {}
 //! Initialisation
 void Renderer::init(char* modelFile)
@@ -56,6 +59,9 @@ void Renderer::init(char* modelFile)
 //! Start the rendering loop
 void Renderer::run()
 {
+	//start the clock
+	clock.restart();
+	//run the rendering loop
 	while(running)
 	{
 		//poll events
@@ -93,10 +99,13 @@ void Renderer::run()
 
 		//reset mouse position to the center of the screem
 		sf::Mouse::setPosition(sf::Vector2i(winWidth/2,winHeight/2), window);
+		animateLight();
 		draw();
 		window.display();
 		camera.resetMoveFlag();
 		light.resetMoveFlag();
+		countFPS();
+		clock.restart();
 	}//main loop
 }
 
@@ -1029,4 +1038,29 @@ void Renderer::setQuadTexCoord(int mipMapLevel) //-1 -> default
                quadVertices, GL_STATIC_DRAW);
   //unbind
   glBindVertexArray(0);
+}
+//! FPS counter
+void Renderer::countFPS()
+{
+	//add drawn frame to the count
+	frameCounter++;
+	//add time it took to draw
+	frameTime += clock.getElapsedTime().asMilliseconds();
+	//if second passed
+	if(frameTime >= 1000)
+	{
+		//print out number of drawn frames per that second
+		std::cout << frameCounter << " FPS" << std::endl;
+		//reset
+		frameCounter = 0;
+		frameTime -= 1000;
+	}
+}
+//! Light animation
+void Renderer::animateLight()
+{
+	glm::vec3 & ol = light.getOrigin();
+	ol.x += lightDir * 0.5;
+	light.move();
+	if(ol.x > 0 || ol.x < -19) lightDir = -lightDir;
 }

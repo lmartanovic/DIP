@@ -87,6 +87,7 @@ void main()
 	vec2 ismTC = TexCoord;
 	ismTC.x *=  2.0/3.0;
 	ismTC /= vplSqrt; //in one cell
+	float dividor = 1.0/float(vplSqrt);
 	//compute which splitting cell we are in
 	int x = int(gl_FragCoord.x - 0.5);
 	int y = int(gl_FragCoord.y - 0.5);
@@ -95,11 +96,11 @@ void main()
 	int xoffset = x/blockWidth;
 	int yoffset = y/blockHeight;
 	//get halton row number
-	int rowNum = yoffset*blocksX + xoffset;
+	int rowNum = (yoffset*blocksX + xoffset)%vplSqrt;
 	//shift to correct ISM row according to grid position
-	ismTC.y += rowNum*(1.0/vplSqrt);
+	ismTC.y += rowNum*dividor;
 	//sampling and projection
-	float yHalton = rowNum*(1.0/vplSqrt);
+	float yHalton = (rowNum+0.5)*dividor;
 	float xHalton;
 	vec4 Position;
 	float Depth, ClipDepth;
@@ -112,14 +113,14 @@ void main()
     mat4 lightView;
     float near = 0.01;
     float far = 20;
-
     vec4 indirColor = vec4(0.0);
+
     for(int i = 0; i < vplSqrt; i++)
 	{
 		//move to neighbour cell in row
 		vec2 ttcc = vec2(ismTC.x + i*(2.0/(3.0*vplSqrt)), ismTC.y);
 		//move in halton row
-		xHalton = i*(1.0/vplSqrt);
+		xHalton = (i+0.5)*dividor;
 		mapCoord = texture2D(haltonTex, vec2(xHalton, yHalton)).rg; //getVPL tex coords
 		VPLpos = texture2D(rsmWSCTex, mapCoord).rgb; //get position
 		VPLnorm = texture2D(rsmNormalTex, mapCoord).rgb; //get normal
@@ -144,7 +145,7 @@ void main()
 
 		ISMdepth = texture2D(ismTex, ttcc).r;//get ISM value
 		//compare fragment depth in paraboloid space with ISM value
-		if(ISMdepth + 0.05> Position.z)	//visible
+		if(ISMdepth > Position.z-0.05)	//visible
 		{
 		  //sample VPL color
 		  VPLcol = texture2D(rsmColorTex, mapCoord);
@@ -152,8 +153,9 @@ void main()
 		  indirColor += VPLcol*color*(1.0/vplSqrt)*0.5;//*color
 		}
 	}
+
 	//final composition
   	if(mode == 0) fragColor = indirColor;
   	else if(mode == 1) fragColor = dirColor;
-  	else fragColor = indirColor*0.5 + dirColor;
+  	else fragColor = indirColor + dirColor*0.5;
 }
